@@ -118,6 +118,35 @@ _QUOTE_PATTERNS = [
     re.compile(r"^El .{5,150} escribi.:\s*$", re.IGNORECASE),
     # Generic "From:" / "Da:" / "Von:" / "De:" / "Van:" header in quoted text
     re.compile(r"^(Da|From|Von|De|Van)\s*:", re.IGNORECASE),
+    # Outlook/Webmail style: "________________________________" separator
+    re.compile(r"^_{10,}$"),
+    # "----- Original Message -----" etc.
+    re.compile(r"^-{3,}\s*(Original Message|Messaggio originale|Urspr.ngliche Nachricht)", re.IGNORECASE),
+    # "Sent from my iPhone/iPad"
+    re.compile(r"^Sent from (my |)?(iPhone|iPad|Samsung|Galaxy|Huawei)", re.IGNORECASE),
+    # "Inviato da" (Italian mobile signature)
+    re.compile(r"^Inviato da (iPhone|iPad|il mio)", re.IGNORECASE),
+    # "Gesendet von" (German)
+    re.compile(r"^Gesendet von (mein|meine)", re.IGNORECASE),
+    # "Envoyé de" (French)
+    re.compile(r"^Envoy.+ de(puis)? (mon |ma )", re.IGNORECASE),
+]
+
+# Signature patterns — if a line matches, everything from that line onward is signature
+_SIGNATURE_PATTERNS = [
+    # Standard signature separator
+    re.compile(r"^--\s*$"),
+    # Campsite signature (Piccolo Camping specific)
+    re.compile(r"^Marinita\s+Alietti", re.IGNORECASE),
+    re.compile(r"^PICCOLO\s+CAMPING", re.IGNORECASE),
+    # Generic signature starts: "Tel.", "Tel:", "Tel/Fax", phone number lines
+    re.compile(r"^Tel[\./:]", re.IGNORECASE),
+    # "Cordiali saluti" / "Best regards" / "Mit freundlichen Grüßen" etc.
+    re.compile(r"^(Cordiali saluti|Distinti saluti|Cordialmente)", re.IGNORECASE),
+    re.compile(r"^(Best regards|Kind regards|Regards|Sincerely)", re.IGNORECASE),
+    re.compile(r"^(Mit freundlichen Gr|Mit besten Gr|Viele Gr)", re.IGNORECASE),
+    re.compile(r"^(Cordialement|Bien . vous)", re.IGNORECASE),
+    re.compile(r"^(Met vriendelijke groet)", re.IGNORECASE),
 ]
 
 _SUBJECT_STRIP_RE = re.compile(
@@ -154,7 +183,7 @@ def _strip_html(html_text: str) -> str:
 
 
 def _strip_quoted_text(text: str) -> str:
-    """Remove quoted text from an email body."""
+    """Remove quoted text, signatures, and email headers from body."""
     lines = text.splitlines()
     clean: list[str] = []
     for line in lines:
@@ -164,6 +193,9 @@ def _strip_quoted_text(text: str) -> str:
             continue
         # Check quote patterns — if matched, stop collecting
         if any(pat.match(stripped) for pat in _QUOTE_PATTERNS):
+            break
+        # Check signature patterns — if matched, stop collecting
+        if any(pat.match(stripped) for pat in _SIGNATURE_PATTERNS):
             break
         clean.append(line)
     # Trim trailing blank lines

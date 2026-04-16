@@ -72,11 +72,11 @@
         <DettaglioPrenotazione
           :prenotazione="store.selected"
           @action="handleAction"
-          @traduci="traduci"
         />
         <ChatStorico
           :messaggi="store.selected.messaggi || []"
-          :prenId="store.selected.id"
+          :translating="translating"
+          @traduci="traduci"
         />
       </template>
       <div v-else class="flex flex-col items-center justify-center h-full text-gray-400">
@@ -89,21 +89,21 @@
     <ModalAccetta
       v-if="modal === 'accetta'"
       :prenId="store.selected?.id"
-      :defaultLingua="store.selected?.lingua || 'IT'"
+      :defaultLingua="store.selected?.lingua_suggerita || 'IT'"
       @close="modal = null"
       @sent="onModalSent"
     />
     <ModalRifiuta
       v-if="modal === 'rifiuta'"
       :prenId="store.selected?.id"
-      :defaultLingua="store.selected?.lingua || 'IT'"
+      :defaultLingua="store.selected?.lingua_suggerita || 'IT'"
       @close="modal = null"
       @sent="onModalSent"
     />
     <ModalInfo
       v-if="modal === 'info'"
       :prenId="store.selected?.id"
-      :defaultLingua="store.selected?.lingua || 'IT'"
+      :defaultLingua="store.selected?.lingua_suggerita || 'IT'"
       @close="modal = null"
       @sent="onModalSent"
     />
@@ -135,6 +135,7 @@ import ModalInfo from '../components/ModalInfo.vue'
 const store = usePrenotazioniStore()
 
 const polling = ref(false)
+const translating = ref(false)
 const importLimit = ref(0)
 const modal = ref(null)
 const toast = ref({ show: false, message: '', type: 'success' })
@@ -211,12 +212,15 @@ async function handleAction(action) {
 
 async function traduci() {
   if (!store.selected) return
+  translating.value = true
   try {
     await traduciThread(store.selected.id)
     await store.selectPrenotazione(store.selected.id)
     showToast('Traduzione completata')
   } catch (e) {
     showToast(e.response?.data?.detail || 'Errore durante la traduzione', 'error')
+  } finally {
+    translating.value = false
   }
 }
 

@@ -48,7 +48,7 @@
             {{ showTranslated && msg.testo_tradotto ? msg.testo_tradotto : msg.testo }}
           </div>
           <div class="text-xs text-gray-400 mt-2 text-right">
-            {{ formatTimestamp(msg.data_invio) }}
+            {{ formatTimestamp(msg.data_ora) }}
           </div>
         </div>
       </div>

@@ -1,72 +1,7 @@
 <template>
   <div class="max-w-4xl mx-auto p-6 space-y-6">
-    <!-- IMAP -->
-    <Section title="IMAP">
-      <div class="grid grid-cols-2 gap-4">
-        <SettingField v-model="settings.imap_server" label="Server" />
-        <SettingField v-model="settings.imap_port" label="Porta" type="number" />
-        <SettingField v-model="settings.imap_user" label="Utente" />
-        <SettingField v-model="settings.imap_password" label="Password" type="password" />
-      </div>
-    </Section>
-
-    <!-- SMTP -->
-    <Section title="SMTP">
-      <div class="grid grid-cols-2 gap-4">
-        <SettingField v-model="settings.smtp_server" label="Server" />
-        <SettingField v-model="settings.smtp_port" label="Porta" type="number" />
-        <SettingField v-model="settings.smtp_user" label="Utente" />
-        <SettingField v-model="settings.smtp_password" label="Password" type="password" />
-      </div>
-      <div class="mt-4 flex items-center gap-4">
-        <button
-          class="px-4 py-2 text-sm font-medium rounded-lg bg-secondary text-white hover:bg-secondary-dark transition-colors disabled:opacity-50"
-          :disabled="testingConn"
-          @click="testConnection"
-        >
-          {{ testingConn ? 'Test in corso...' : 'Testa connessione' }}
-        </button>
-        <div v-if="testResult" class="text-sm">
-          <span :class="testResult.imap_ok ? 'text-green-600' : 'text-red-600'">
-            IMAP: {{ testResult.imap_ok ? 'OK' : testResult.imap_error || 'Errore' }}
-          </span>
-          <span class="mx-2 text-gray-300">|</span>
-          <span :class="testResult.smtp_ok ? 'text-green-600' : 'text-red-600'">
-            SMTP: {{ testResult.smtp_ok ? 'OK' : testResult.smtp_error || 'Errore' }}
-          </span>
-        </div>
-      </div>
-    </Section>
-
-    <!-- Ollama -->
-    <Section title="Ollama">
-      <div class="grid grid-cols-2 gap-4">
-        <SettingField v-model="settings.ollama_url" label="URL" />
-        <SettingField v-model="settings.ollama_model" label="Modello" />
-        <SettingField v-model="settings.ollama_workers" label="Workers" type="number" />
-        <SettingField v-model="settings.poll_interval_minutes" label="Intervallo poll (min)" type="number" />
-      </div>
-    </Section>
-
-    <!-- Email identity -->
-    <Section title="Identita email">
-      <div class="grid grid-cols-2 gap-4">
-        <SettingField v-model="settings.email_mittente" label="Email mittente" />
-        <SettingField v-model="settings.email_form_sito" label="Email form sito" />
-        <SettingField v-model="settings.caparra_percentuale" label="Caparra %" type="number" />
-      </div>
-    </Section>
-
-    <!-- Filtri spam -->
-    <Section title="Filtri spam">
-      <div class="space-y-4">
-        <SettingField v-model="settings.filtro_domini_scarta" label="Domini da scartare (separati da virgola)" />
-        <SettingField v-model="settings.filtro_oggetto_scarta" label="Oggetto da scartare (separati da virgola)" />
-      </div>
-    </Section>
-
-    <!-- Save button -->
-    <div class="flex justify-end">
+    <div class="flex items-center justify-between">
+      <h1 class="text-xl font-bold text-gray-800">Impostazioni</h1>
       <button
         class="px-6 py-2.5 text-sm font-medium rounded-lg bg-primary text-white hover:bg-primary-dark transition-colors disabled:opacity-50"
         :disabled="saving"
@@ -76,148 +11,222 @@
       </button>
     </div>
 
-    <!-- Template editor -->
-    <Section title="Template email">
-      <div class="space-y-4">
-        <div class="flex gap-4 items-end">
-          <div class="flex-1">
-            <label class="block text-xs font-medium text-gray-500 mb-1">Lingua</label>
-            <select
-              v-model="tplLingua"
-              class="w-full px-3 py-2 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-              @change="loadTemplate"
-            >
-              <option v-for="l in lingue" :key="l" :value="l">{{ l }}</option>
-            </select>
-          </div>
-          <div class="flex-1">
-            <label class="block text-xs font-medium text-gray-500 mb-1">Tipo</label>
-            <select
-              v-model="tplTipo"
-              class="w-full px-3 py-2 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-              @change="loadTemplate"
-            >
-              <option v-for="t in tipi" :key="t" :value="t">{{ t }}</option>
-            </select>
-          </div>
-          <button
-            class="px-4 py-2 text-sm font-medium rounded-lg bg-warm text-white hover:bg-warm-dark transition-colors"
-            @click="loadPreview"
-          >
-            Anteprima
-          </button>
-        </div>
+    <div v-if="toast.show" class="px-4 py-3 rounded-lg text-sm font-medium"
+      :class="toast.type === 'error' ? 'bg-red-100 text-red-800 border border-red-200' : 'bg-green-100 text-green-800 border border-green-200'">
+      {{ toast.message }}
+    </div>
 
-        <div v-if="currentModello">
-          <div class="space-y-3">
-            <div>
-              <label class="block text-xs font-medium text-gray-500 mb-1">Soggetto</label>
-              <input
-                v-model="currentModello.soggetto"
-                type="text"
-                class="w-full px-3 py-2 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-              />
-            </div>
-            <div>
-              <label class="block text-xs font-medium text-gray-500 mb-1">Corpo</label>
-              <textarea
-                v-model="currentModello.corpo"
-                rows="10"
-                class="w-full px-3 py-2 rounded-lg border border-border bg-white text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-y"
-              ></textarea>
-            </div>
-            <div class="flex justify-end">
-              <button
-                class="px-4 py-2 text-sm font-medium rounded-lg bg-primary text-white hover:bg-primary-dark transition-colors disabled:opacity-50"
-                :disabled="savingTemplate"
-                @click="saveTemplate"
-              >
-                {{ savingTemplate ? 'Salvataggio...' : 'Salva template' }}
-              </button>
-            </div>
+    <!-- IMAP -->
+    <div class="bg-surface rounded-xl shadow-sm border border-border p-5">
+      <h2 class="text-sm font-bold text-primary-dark mb-4 pb-2 border-b border-border">IMAP (ricezione mail)</h2>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Server IMAP</label>
+          <input v-model="cfg.imap_server" placeholder="imap.gmail.com"
+            class="w-full px-3 py-2 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Porta</label>
+          <input v-model="cfg.imap_port" placeholder="993"
+            class="w-full px-3 py-2 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Utente (email)</label>
+          <input v-model="cfg.imap_user" placeholder="info@piccolocamping.com"
+            class="w-full px-3 py-2 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Password</label>
+          <div class="flex gap-1">
+            <input :type="showPwd.imap ? 'text' : 'password'" v-model="cfg.imap_password"
+              class="flex-1 px-3 py-2 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
+            <button @click="showPwd.imap = !showPwd.imap"
+              class="px-3 py-2 rounded-lg bg-gray-100 text-sm hover:bg-gray-200 transition-colors">
+              {{ showPwd.imap ? '🙈' : '👁' }}
+            </button>
           </div>
-        </div>
-        <div v-else class="text-sm text-gray-400 text-center py-4">
-          Seleziona lingua e tipo per modificare il template
-        </div>
-
-        <!-- Preview -->
-        <div v-if="preview" class="bg-gray-50 rounded-lg p-4 border border-border">
-          <h3 class="text-xs font-semibold text-gray-500 uppercase mb-2">Anteprima</h3>
-          <div class="text-sm font-medium mb-2">{{ preview.soggetto }}</div>
-          <div class="text-sm text-gray-600 whitespace-pre-wrap">{{ preview.corpo }}</div>
         </div>
       </div>
-    </Section>
+    </div>
 
-    <!-- Toast -->
-    <Transition name="toast">
-      <div
-        v-if="toast.show"
-        class="fixed bottom-6 right-6 px-4 py-3 rounded-lg shadow-lg text-sm font-medium text-white z-50"
-        :class="toast.type === 'error' ? 'bg-red-600' : 'bg-green-600'"
-      >
-        {{ toast.message }}
+    <!-- SMTP -->
+    <div class="bg-surface rounded-xl shadow-sm border border-border p-5">
+      <h2 class="text-sm font-bold text-primary-dark mb-4 pb-2 border-b border-border">SMTP (invio mail)</h2>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Server SMTP</label>
+          <input v-model="cfg.smtp_server" placeholder="smtp.gmail.com"
+            class="w-full px-3 py-2 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Porta</label>
+          <input v-model="cfg.smtp_port" placeholder="587"
+            class="w-full px-3 py-2 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Utente SMTP</label>
+          <input v-model="cfg.smtp_user" placeholder="info@piccolocamping.com"
+            class="w-full px-3 py-2 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Password SMTP</label>
+          <div class="flex gap-1">
+            <input :type="showPwd.smtp ? 'text' : 'password'" v-model="cfg.smtp_password"
+              class="flex-1 px-3 py-2 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
+            <button @click="showPwd.smtp = !showPwd.smtp"
+              class="px-3 py-2 rounded-lg bg-gray-100 text-sm hover:bg-gray-200 transition-colors">
+              {{ showPwd.smtp ? '🙈' : '👁' }}
+            </button>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Email mittente (From)</label>
+          <input v-model="cfg.email_mittente" placeholder="info@piccolocamping.com"
+            class="w-full px-3 py-2 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Email form sito</label>
+          <input v-model="cfg.email_form_sito" placeholder="contatti@piccolocamping.com"
+            class="w-full px-3 py-2 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
+        </div>
       </div>
-    </Transition>
+      <div class="mt-4 flex items-center gap-4">
+        <button @click="testConnection" :disabled="testing"
+          class="px-4 py-2 text-sm font-medium rounded-lg bg-secondary text-white hover:bg-secondary-dark transition-colors disabled:opacity-50">
+          {{ testing ? 'Test in corso...' : 'Testa connessione IMAP + SMTP' }}
+        </button>
+        <div v-if="testResult" class="text-sm space-x-3">
+          <span :class="testResult.imap?.ok ? 'text-green-600' : 'text-red-600'">
+            IMAP: {{ testResult.imap?.ok ? 'OK' : testResult.imap?.error || 'Errore' }}
+          </span>
+          <span :class="testResult.smtp?.ok ? 'text-green-600' : 'text-red-600'">
+            SMTP: {{ testResult.smtp?.ok ? 'OK' : testResult.smtp?.error || 'Errore' }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Generale -->
+    <div class="bg-surface rounded-xl shadow-sm border border-border p-5">
+      <h2 class="text-sm font-bold text-primary-dark mb-4 pb-2 border-b border-border">Generale</h2>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Caparra %</label>
+          <input type="number" v-model="cfg.caparra_percentuale" min="0" max="100"
+            class="w-full px-3 py-2 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Intervallo polling (minuti)</label>
+          <input type="number" v-model="cfg.poll_interval_minutes" min="1"
+            class="w-full px-3 py-2 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
+        </div>
+        <div class="col-span-2">
+          <label class="block text-xs font-medium text-gray-500 mb-1">Domini da scartare (separati da virgola)</label>
+          <input v-model="cfg.filtro_domini_scarta" placeholder="aruba.it,mailchimp.com"
+            class="w-full px-3 py-2 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
+        </div>
+        <div class="col-span-2">
+          <label class="block text-xs font-medium text-gray-500 mb-1">Parole oggetto da scartare (separati da virgola)</label>
+          <input v-model="cfg.filtro_oggetto_scarta" placeholder="Fattura,Rinnovo,Scadenza"
+            class="w-full px-3 py-2 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Ollama -->
+    <div class="bg-surface rounded-xl shadow-sm border border-border p-5">
+      <h2 class="text-sm font-bold text-primary-dark mb-4 pb-2 border-b border-border">Ollama (LLM locale)</h2>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">URL Ollama</label>
+          <input v-model="cfg.ollama_url" placeholder="http://localhost:11434"
+            class="w-full px-3 py-2 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Modello</label>
+          <input v-model="cfg.ollama_model" placeholder="phi3:mini"
+            class="w-full px-3 py-2 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Worker paralleli</label>
+          <input type="number" v-model="cfg.ollama_workers" min="1"
+            class="w-full px-3 py-2 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
+        </div>
+      </div>
+      <div class="mt-3 text-xs text-gray-500 bg-gray-50 rounded-lg p-3">
+        Modelli consigliati: <code class="bg-gray-200 px-1 rounded">phi3:mini</code> (leggero ~2.3GB) ·
+        <code class="bg-gray-200 px-1 rounded">mistral:7b-instruct-q4_K_M</code> (piu preciso ~4GB)<br>
+        Installare con: <code class="bg-gray-200 px-1 rounded">ollama pull phi3:mini</code>
+      </div>
+    </div>
+
+    <!-- Modelli email -->
+    <div class="bg-surface rounded-xl shadow-sm border border-border p-5">
+      <h2 class="text-sm font-bold text-primary-dark mb-4 pb-2 border-b border-border">Modelli Email</h2>
+      <div class="flex gap-2 mb-4 flex-wrap">
+        <button v-for="l in LINGUE" :key="l" @click="filterLingua = l"
+          class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+          :class="filterLingua === l ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'">
+          {{ l }}
+        </button>
+      </div>
+
+      <div v-for="m in modelliFiltered" :key="m.id" class="border border-border rounded-lg p-4 mb-3 bg-gray-50/50">
+        <div class="mb-2">
+          <span class="text-xs font-bold uppercase tracking-wide text-primary bg-primary/10 px-2 py-0.5 rounded">
+            {{ m.lingua }} — {{ m.tipo }}
+          </span>
+        </div>
+        <div class="mb-2">
+          <label class="block text-xs font-medium text-gray-500 mb-1">Soggetto</label>
+          <input v-model="modelloEdits[m.id].soggetto"
+            class="w-full px-3 py-2 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
+        </div>
+        <div class="mb-2">
+          <label class="block text-xs font-medium text-gray-500 mb-1">
+            Corpo <span class="text-gray-400 font-normal">(variabili: {nome} {cognome} {data_arrivo} {data_partenza} {adulti} {bambini} {posto_per} {costo_totale} {caparra} {testo_aggiuntivo})</span>
+          </label>
+          <textarea v-model="modelloEdits[m.id].corpo" rows="6"
+            class="w-full px-3 py-2 rounded-lg border border-border bg-white text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-y"></textarea>
+        </div>
+        <button @click="saveModello(m.id)"
+          class="px-4 py-1.5 text-xs font-medium rounded-lg bg-primary-light text-white hover:bg-primary transition-colors">
+          Salva modello
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
-import {
-  getImpostazioni,
-  updateImpostazioniBatch,
-  testCredenziali,
-  getModelli,
-  updateModello,
-  previewModello,
-} from '../api'
+import { ref, reactive, computed, onMounted } from 'vue'
+import { getImpostazioni, updateImpostazioniBatch, testCredenziali, getModelli, updateModello } from '../api'
 
-/* --- Sub-components ---------------------------------------------------- */
+const LINGUE = ['IT', 'EN', 'DE', 'FR', 'NL']
 
-const Section = {
-  props: ['title'],
-  template: `<div class="bg-surface rounded-xl shadow-sm border border-border p-5">
-    <h2 class="text-base font-semibold text-gray-700 mb-4">{{ title }}</h2>
-    <slot />
-  </div>`,
-}
-
-const SettingField = {
-  props: ['modelValue', 'label', 'type'],
-  emits: ['update:modelValue'],
-  template: `<div>
-    <label class="block text-xs font-medium text-gray-500 mb-1">{{ label }}</label>
-    <input
-      :type="type || 'text'"
-      :value="modelValue"
-      @input="$emit('update:modelValue', $event.target.value)"
-      class="w-full px-3 py-2 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-    />
-  </div>`,
-}
-
-/* --- State -------------------------------------------------------------- */
-
-const settings = reactive({})
-const saving = ref(false)
-const testingConn = ref(false)
-const testResult = ref(null)
+const showPwd = reactive({ imap: false, smtp: false })
+const cfg = reactive({
+  imap_server: '', imap_port: '993', imap_user: '', imap_password: '',
+  smtp_server: '', smtp_port: '587', smtp_user: '', smtp_password: '',
+  email_mittente: '', email_form_sito: '',
+  caparra_percentuale: '30', poll_interval_minutes: '10',
+  filtro_domini_scarta: '', filtro_oggetto_scarta: '',
+  ollama_url: 'http://localhost:11434', ollama_model: 'phi3:mini', ollama_workers: '4',
+})
 
 const modelli = ref([])
-const lingue = ['IT', 'EN', 'DE', 'FR', 'NL']
-const tipi = ['accetta', 'rifiuta', 'info']
-const tplLingua = ref('IT')
-const tplTipo = ref('accetta')
-const currentModello = ref(null)
-const savingTemplate = ref(false)
-const preview = ref(null)
-
+const modelloEdits = reactive({})
+const filterLingua = ref('IT')
+const saving = ref(false)
+const testing = ref(false)
+const testResult = ref(null)
 const toast = ref({ show: false, message: '', type: 'success' })
+
 let toastTimer = null
 
-/* --- Toast -------------------------------------------------------------- */
+const modelliFiltered = computed(() =>
+  modelli.value.filter(m => m.lingua === filterLingua.value)
+)
 
 function showToast(message, type = 'success') {
   toast.value = { show: true, message, type }
@@ -225,26 +234,28 @@ function showToast(message, type = 'success') {
   toastTimer = setTimeout(() => { toast.value.show = false }, 3000)
 }
 
-/* --- Settings ----------------------------------------------------------- */
-
-async function loadSettings() {
+onMounted(async () => {
   try {
-    const { data } = await getImpostazioni()
-    for (const item of data) {
-      settings[item.chiave] = item.valore
+    const [settRes, modRes] = await Promise.all([getImpostazioni(), getModelli()])
+    // Settings come as array of {chiave, valore}
+    for (const item of settRes.data) {
+      if (item.chiave in cfg) {
+        cfg[item.chiave] = item.valore || ''
+      }
+    }
+    modelli.value = modRes.data
+    for (const m of modRes.data) {
+      modelloEdits[m.id] = { soggetto: m.soggetto, corpo: m.corpo }
     }
   } catch (e) {
     showToast('Errore caricamento impostazioni', 'error')
   }
-}
+})
 
 async function saveSettings() {
   saving.value = true
   try {
-    const batch = Object.entries(settings).map(([chiave, valore]) => ({
-      chiave,
-      valore: valore ?? '',
-    }))
+    const batch = Object.entries(cfg).map(([chiave, valore]) => ({ chiave, valore: String(valore ?? '') }))
     await updateImpostazioniBatch(batch)
     showToast('Impostazioni salvate')
   } catch (e) {
@@ -255,83 +266,27 @@ async function saveSettings() {
 }
 
 async function testConnection() {
-  testingConn.value = true
+  testing.value = true
   testResult.value = null
   try {
     const { data } = await testCredenziali()
     testResult.value = data
   } catch (e) {
-    showToast(e.response?.data?.detail || 'Errore test connessione', 'error')
-  } finally {
-    testingConn.value = false
-  }
-}
-
-/* --- Templates ---------------------------------------------------------- */
-
-async function loadModelli() {
-  try {
-    const { data } = await getModelli()
-    modelli.value = data
-    loadTemplate()
-  } catch (e) {
-    showToast('Errore caricamento modelli', 'error')
-  }
-}
-
-function loadTemplate() {
-  const found = modelli.value.find(
-    (m) => m.lingua === tplLingua.value && m.tipo === tplTipo.value
-  )
-  currentModello.value = found ? { ...found } : null
-  preview.value = null
-}
-
-async function saveTemplate() {
-  if (!currentModello.value) return
-  savingTemplate.value = true
-  try {
-    await updateModello(currentModello.value.id, {
-      soggetto: currentModello.value.soggetto,
-      corpo: currentModello.value.corpo,
-    })
-    const idx = modelli.value.findIndex((m) => m.id === currentModello.value.id)
-    if (idx !== -1) {
-      modelli.value[idx] = { ...currentModello.value }
+    testResult.value = {
+      imap: { ok: false, error: e.response?.data?.detail || e.message },
+      smtp: { ok: false, error: '-' },
     }
-    showToast('Template salvato')
-  } catch (e) {
-    showToast(e.response?.data?.detail || 'Errore salvataggio template', 'error')
   } finally {
-    savingTemplate.value = false
+    testing.value = false
   }
 }
 
-async function loadPreview() {
-  if (!currentModello.value) return
+async function saveModello(id) {
   try {
-    const { data } = await previewModello(currentModello.value.id)
-    preview.value = data
+    await updateModello(id, modelloEdits[id])
+    showToast('Modello salvato')
   } catch (e) {
-    showToast(e.response?.data?.detail || 'Errore anteprima', 'error')
+    showToast('Errore salvataggio modello', 'error')
   }
 }
-
-/* --- Lifecycle ---------------------------------------------------------- */
-
-onMounted(async () => {
-  await Promise.all([loadSettings(), loadModelli()])
-})
 </script>
-
-<style scoped>
-.toast-enter-active,
-.toast-leave-active {
-  transition: all 0.3s ease;
-}
-.toast-enter-from,
-.toast-leave-to {
-  opacity: 0;
-  transform: translateY(10px);
-}
-</style>

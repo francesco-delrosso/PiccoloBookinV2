@@ -59,7 +59,7 @@ def _build_parse_prompt(from_addr: str, subject: str, body: str) -> str:
     email_text = f"From: {from_addr}\nSubject: {subject}\n\n{body}"[:3000]
 
     return f"""You are a classifier for a small Italian lakeside campsite called "Piccolo Camping" (Lake Como, Italy).
-The email may be in Italian, English, German, French, or Dutch.
+The email may be in Italian, English, German, French, Dutch, or Spanish.
 
 Return ONLY a valid JSON object — no extra text, no markdown, no explanation.
 
@@ -105,7 +105,7 @@ Other rules:
 - "adulti" / "bambini": integer, null if not stated
 - "posto_per": "tenda" | "camper" | "caravan" | "bungalow" | null
   tent/tenda/zelt/tente → tenda; motorhome/wohnmobil/camping-car/kastenwagen/van → camper; caravan/roulotte/wohnwagen → caravan
-- "lingua": "IT" | "EN" | "DE" | "FR" | "NL"
+- "lingua": "IT" | "EN" | "DE" | "FR" | "NL" | "ES"
 - "confidenza": 0.0–1.0. For spam: use 0.9 if clearly commercial/automated. For prenotazione: >0.7 only if name + dates + vehicle type are all present.
 
 Email:

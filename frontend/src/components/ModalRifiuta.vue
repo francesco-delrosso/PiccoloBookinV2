@@ -76,7 +76,7 @@ const props = defineProps({
 const emit = defineEmits(['close', 'sent'])
 const store = usePrenotazioniStore()
 
-const lingue = ['IT', 'EN', 'DE', 'FR', 'NL']
+const lingue = ['IT', 'EN', 'DE', 'FR', 'NL', 'ES']
 const lingua = ref(props.defaultLingua)
 const testoAggiuntivo = ref('')
 const modelli = ref([])

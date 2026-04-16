@@ -162,7 +162,7 @@ const emit = defineEmits(['action', 'saved'])
 const store = usePrenotazioniStore()
 
 const p = computed(() => props.prenotazione || {})
-const lingue = ['IT', 'EN', 'DE', 'FR', 'NL']
+const lingue = ['IT', 'EN', 'DE', 'FR', 'NL', 'ES']
 const saving = ref(false)
 
 // Price list + caparra

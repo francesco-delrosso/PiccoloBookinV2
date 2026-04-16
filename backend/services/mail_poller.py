@@ -83,6 +83,8 @@ _SIGNATURE_PATTERNS = [
     re.compile(r"^(Mit freundlichen Gr|Mit besten Gr|Viele Gr)", re.IGNORECASE),
     re.compile(r"^(Cordialement|Bien . vous)", re.IGNORECASE),
     re.compile(r"^(Met vriendelijke groet)", re.IGNORECASE),
+    re.compile(r"^(Un cordial saludo|Atentamente|Saludos cordiales)", re.IGNORECASE),
+    re.compile(r"^(Enviado desde mi iPhone|Enviado desde mi iPad)", re.IGNORECASE),
 ]
 
 
@@ -243,7 +245,9 @@ def _parse_form_body(body: str, subject: str) -> dict | None:
         for word, lang in [("dear", "EN"), ("please", "EN"), ("would like", "EN"),
                            ("lieber", "DE"), ("möchten", "DE"), ("gerne", "DE"),
                            ("cher", "FR"), ("nous", "FR"), ("voudrions", "FR"),
-                           ("graag", "NL"), ("hebben", "NL"), ("zouden", "NL")]:
+                           ("graag", "NL"), ("hebben", "NL"), ("zouden", "NL"),
+                           ("hola", "ES"), ("quisiera", "ES"), ("disponibilidad", "ES"),
+                           ("reservar", "ES"), ("parcela", "ES"), ("queremos", "ES")]:
             if word in msg_text.lower():
                 lingua = lang
                 break

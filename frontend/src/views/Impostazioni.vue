@@ -202,7 +202,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { getImpostazioni, updateImpostazioniBatch, testCredenziali, getModelli, updateModello } from '../api'
 
-const LINGUE = ['IT', 'EN', 'DE', 'FR', 'NL']
+const LINGUE = ['IT', 'EN', 'DE', 'FR', 'NL', 'ES']
 
 const showPwd = reactive({ imap: false, smtp: false })
 const cfg = reactive({

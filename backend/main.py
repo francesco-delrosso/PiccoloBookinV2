@@ -349,6 +349,59 @@ _DEFAULT_TEMPLATES: list[dict] = [
             "Het team van Piccolo Camping"
         ),
     },
+    # --- Espanol ---
+    {
+        "lingua": "ES",
+        "tipo": "accetta",
+        "soggetto": "Confirmacion de reserva - Piccolo Camping",
+        "corpo": (
+            "Estimado/a {nome},\n\n"
+            "Nos complace confirmar su reserva en Piccolo Camping.\n\n"
+            "Resumen:\n"
+            "- Llegada: {data_arrivo}\n"
+            "- Salida: {data_partenza}\n"
+            "- Huespedes: {adulti} adultos, {bambini} ninos\n"
+            "- Parcela: {posto_per}\n"
+            "- Total estimado: EUR {costo_totale}\n\n"
+            "Para finalizar su reserva, le rogamos realizar una transferencia "
+            "de EUR {caparra} ({caparra_percentuale}% del importe total) en un plazo de 7 dias.\n\n"
+            "Datos bancarios:\n"
+            "IBAN: IT00 0000 0000 0000 0000 0000 000\n"
+            "Titular: Piccolo Camping S.r.l.\n"
+            "Concepto: Reserva {nome} {data_arrivo}\n\n"
+            "No dude en contactarnos si tiene alguna pregunta.\n\n"
+            "Un cordial saludo,\n"
+            "El equipo de Piccolo Camping"
+        ),
+    },
+    {
+        "lingua": "ES",
+        "tipo": "rifiuta",
+        "soggetto": "Solicitud de reserva - Piccolo Camping",
+        "corpo": (
+            "Estimado/a {nome},\n\n"
+            "Gracias por su interes en Piccolo Camping.\n\n"
+            "Lamentablemente no disponemos de plazas para el periodo solicitado "
+            "({data_arrivo} - {data_partenza}).\n\n"
+            "{testo_aggiuntivo}\n\n"
+            "Le invitamos a consultar disponibilidad para otras fechas.\n\n"
+            "Un cordial saludo,\n"
+            "El equipo de Piccolo Camping"
+        ),
+    },
+    {
+        "lingua": "ES",
+        "tipo": "info",
+        "soggetto": "Informacion - Piccolo Camping",
+        "corpo": (
+            "Estimado/a {nome},\n\n"
+            "Gracias por su mensaje.\n\n"
+            "{testo_aggiuntivo}\n\n"
+            "Quedamos a su disposicion para cualquier consulta.\n\n"
+            "Un cordial saludo,\n"
+            "El equipo de Piccolo Camping"
+        ),
+    },
 ]
 
 # ---------------------------------------------------------------------------

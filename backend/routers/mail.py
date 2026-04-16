@@ -11,7 +11,11 @@ from sqlalchemy.orm import Session
 
 from database import get_db, SessionLocal
 from models import Impostazione
-from services.mail_poller import poll_emails, import_full_history, reset_and_reimport
+from services.mail_poller import (
+    poll_emails, import_full_history, reset_and_reimport,
+    _connect_imap, _batch_fetch_headers, _find_sent_folder,
+    _discard, _has_camping_content, _is_form_email, _determine_mittente,
+)
 from services.mail_sender import test_smtp, test_imap
 
 router = APIRouter()
@@ -174,6 +178,45 @@ def get_job_status():
         if state.get("errors"):
             state["errors"] = state["errors"][-10:]
         return state
+
+
+@router.get("/scan-headers")
+def scan_headers(limit: int = 50, db: Session = Depends(get_db)):
+    """Diagnostic: fetch last N email headers from INBOX and show
+    from/subject/date + what the filter would do (L0/L1/L1.5/pass).
+    Does NOT import anything."""
+    settings = _load_settings(db)
+    conn = _connect_imap(settings)
+    try:
+        headers = _batch_fetch_headers(conn, "INBOX", limit=limit)
+        results = []
+        for mid, hdr in sorted(headers.items(), key=lambda x: x[1].get("date") or "", reverse=True):
+            from_addr = hdr["from_addr"]
+            subject = hdr["subject"]
+            date = str(hdr.get("date", ""))
+
+            # Determine what filter would do
+            if _is_form_email(from_addr, settings):
+                verdict = "L0-FORM"
+            elif _determine_mittente(from_addr, settings) == "Campeggio":
+                verdict = "CAMPEGGIO"
+            elif _discard(from_addr, subject, settings):
+                verdict = "L1-SPAM"
+            else:
+                verdict = "PASS→Ollama"
+
+            results.append({
+                "from": from_addr,
+                "subject": subject[:80],
+                "date": date[:19],
+                "verdict": verdict,
+            })
+        return {"count": len(results), "emails": results}
+    finally:
+        try:
+            conn.logout()
+        except Exception:
+            pass
 
 
 @router.post("/test-credenziali")

@@ -41,9 +41,12 @@ _NOREPLY_PREFIXES = [
     # Notifications
     "notifications", "notification", "notifiche", "alert", "alerts",
     "avviso", "avvisi", "update", "updates", "aggiornamenti",
-    # Support/tickets
+    # Support/tickets/admin
     "support@nexi", "noreply@nexi", "helpdesk", "ticket", "feedback",
     "survey", "sondaggio", "customerservice",
+    # Sales/services
+    "sales", "vendite", "commerciale", "assistenza",
+    "aggiornamentodati", "clienti", "nazionale",
     # Social media
     "facebookmail", "twittermail", "linkedin", "instagram",
     # Tech services
@@ -74,6 +77,10 @@ _SPAM_DOMAIN_KEYWORDS = [
     "iubenda.", "cookiebot.",
     # Bulk mailers
     "smtpout.", "bulk.", "mass.", "broadcast.",
+    # Italian industry / portals / associations (not personal customers)
+    "confcommercio", "faita.it", "mondocamping.", "camping.it",
+    "dacos.it", "passportscan.",
+    "maggengo.",  # local supplier
 ]
 
 # Subject keywords that indicate spam (checked case-insensitive)

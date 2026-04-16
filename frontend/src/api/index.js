@@ -10,6 +10,7 @@ export const deletePrenotazione = (id) => api.delete(`/prenotazioni/${id}`)
 export const addMessaggio = (id, data) => api.post(`/prenotazioni/${id}/messaggi`, data)
 export const inviaMail = (id, data) => api.post(`/prenotazioni/${id}/invia-mail`, data)
 export const traduciThread = (id) => api.post(`/prenotazioni/${id}/traduci`)
+export const inviaMessaggio = (id, data) => api.post(`/prenotazioni/${id}/invia-messaggio`, data)
 
 export const pollMail = (limit = 20) => apiLong.post(`/mail/poll?limit=${limit}`)
 export const importFull = (mailLimit = 0, ollamaLimit = 100) =>

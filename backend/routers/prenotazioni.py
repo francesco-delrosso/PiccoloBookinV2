@@ -17,6 +17,7 @@ from schemas import (
     MessaggioOut,
     MessaggioCreate,
     InviaMailRequest,
+    InviaMessaggioRequest,
 )
 from services.mail_sender import send_email
 from services.smart_parser import translate_to_italian
@@ -108,6 +109,59 @@ def add_messaggio(
     db.commit()
     db.refresh(msg)
     return msg
+
+
+# ---------------------------------------------------------------------------
+# Send free-text email (no template)
+# ---------------------------------------------------------------------------
+@router.post("/{pren_id}/invia-messaggio")
+def invia_messaggio(
+    pren_id: int, data: InviaMessaggioRequest, db: Session = Depends(get_db)
+):
+    """Send a free-text email to the client and save in thread."""
+    p = _get_pren_or_404(db, pren_id)
+    if not p.email:
+        raise HTTPException(status_code=400, detail="Prenotazione senza email cliente")
+
+    settings = _load_settings(db)
+
+    subject = data.soggetto or f"Re: Piccolo Camping"
+
+    # Find last client message for In-Reply-To
+    last_msg = (
+        db.query(StoricoMessaggio)
+        .filter_by(id_prenotazione=pren_id, mittente="Cliente")
+        .order_by(StoricoMessaggio.data_ora.desc())
+        .first()
+    )
+    reply_to = last_msg.message_id if last_msg else None
+
+    try:
+        new_mid = send_email(
+            to_addr=p.email,
+            subject=subject,
+            body=data.testo,
+            settings=settings,
+            reply_to_message_id=reply_to,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Errore invio: {e}")
+
+    msg = StoricoMessaggio(
+        id_prenotazione=pren_id,
+        mittente="Campeggio",
+        testo=data.testo,
+        message_id=new_mid,
+        data_ora=datetime.now(timezone.utc),
+    )
+    db.add(msg)
+
+    if p.stato in ("Nuova", "Nuova Risposta"):
+        p.stato = "In lavorazione"
+
+    db.commit()
+    db.refresh(msg)
+    return {"ok": True, "message_id": new_mid}
 
 
 # ---------------------------------------------------------------------------

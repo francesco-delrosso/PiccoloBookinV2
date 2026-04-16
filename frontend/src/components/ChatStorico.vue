@@ -70,18 +70,47 @@
         </div>
       </template>
     </div>
+
+    <!-- Compose -->
+    <div class="px-4 py-3 border-t border-border">
+      <div class="flex gap-2">
+        <textarea
+          v-model="newMessage"
+          rows="2"
+          placeholder="Scrivi un messaggio..."
+          class="flex-1 px-3 py-2 text-sm rounded-lg border border-border bg-white resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+          @keydown.ctrl.enter="sendMessage"
+        ></textarea>
+        <button
+          @click="sendMessage"
+          :disabled="!newMessage.trim() || sending"
+          class="self-end px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-40"
+        >
+          {{ sending ? '...' : 'Invia' }}
+        </button>
+      </div>
+      <div class="text-[11px] text-gray-400 mt-1">Ctrl+Invio per inviare</div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue'
+import { inviaMessaggio } from '../api'
+import { usePrenotazioniStore } from '../stores/prenotazioni'
+
+const store = usePrenotazioniStore()
 
 const props = defineProps({
   messaggi: { type: Array, default: () => [] },
   translating: { type: Boolean, default: false },
+  prenId: { type: Number, default: null },
 })
 
 defineEmits(['traduci'])
+
+const newMessage = ref('')
+const sending = ref(false)
 
 const chatContainer = ref(null)
 const showTranslated = ref(false)
@@ -89,6 +118,21 @@ const showTranslated = ref(false)
 const hasTranslations = computed(() =>
   props.messaggi?.some((m) => m.testo_tradotto)
 )
+
+async function sendMessage() {
+  if (!newMessage.value.trim() || !props.prenId) return
+  sending.value = true
+  try {
+    await inviaMessaggio(props.prenId, { testo: newMessage.value.trim() })
+    newMessage.value = ''
+    await store.selectPrenotazione(props.prenId)
+    await store.fetchAll()
+  } catch (e) {
+    alert('Errore invio: ' + (e.response?.data?.detail || e.message))
+  } finally {
+    sending.value = false
+  }
+}
 
 // URL regex for linkification
 const URL_RE = /https?:\/\/[^\s<>"')\]]+/g

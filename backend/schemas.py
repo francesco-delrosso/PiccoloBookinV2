@@ -94,6 +94,11 @@ class InviaMailRequest(BaseModel):
     testo_aggiuntivo: Optional[str] = ""
 
 
+class InviaMessaggioRequest(BaseModel):
+    testo: str
+    soggetto: Optional[str] = ""
+
+
 class JobStatus(BaseModel):
     job_id: Optional[str] = None
     status: str = "idle"

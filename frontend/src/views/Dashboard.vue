@@ -76,6 +76,7 @@
         <ChatStorico
           :messaggi="store.selected.messaggi || []"
           :translating="translating"
+          :prenId="store.selected.id"
           @traduci="traduci"
         />
       </template>

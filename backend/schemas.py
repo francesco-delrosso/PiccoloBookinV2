@@ -97,6 +97,7 @@ class InviaMailRequest(BaseModel):
 class InviaMessaggioRequest(BaseModel):
     testo: str
     soggetto: Optional[str] = ""
+    tipo_azione: Optional[str] = None  # "accetta" | "rifiuta" | "info" | None
 
 
 class JobStatus(BaseModel):

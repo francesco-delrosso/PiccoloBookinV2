@@ -86,24 +86,12 @@
       </div>
     </div>
 
-    <!-- Modals -->
-    <ModalAccetta
-      v-if="modal === 'accetta'"
+    <!-- Modal email (unified for accetta/rifiuta/info) -->
+    <ModalEmail
+      v-if="modal"
+      :tipo="modal"
       :prenId="store.selected?.id"
-      :defaultLingua="store.selected?.lingua_suggerita || 'IT'"
-      @close="modal = null"
-      @sent="onModalSent"
-    />
-    <ModalRifiuta
-      v-if="modal === 'rifiuta'"
-      :prenId="store.selected?.id"
-      :defaultLingua="store.selected?.lingua_suggerita || 'IT'"
-      @close="modal = null"
-      @sent="onModalSent"
-    />
-    <ModalInfo
-      v-if="modal === 'info'"
-      :prenId="store.selected?.id"
+      :prenotazione="store.selected"
       :defaultLingua="store.selected?.lingua_suggerita || 'IT'"
       @close="modal = null"
       @sent="onModalSent"
@@ -129,9 +117,7 @@ import { pollMail, importFull as importFullApi, resetReimport, deletePrenotazion
 import PrenotazioniList from '../components/PrenotazioniList.vue'
 import DettaglioPrenotazione from '../components/DettaglioPrenotazione.vue'
 import ChatStorico from '../components/ChatStorico.vue'
-import ModalAccetta from '../components/ModalAccetta.vue'
-import ModalRifiuta from '../components/ModalRifiuta.vue'
-import ModalInfo from '../components/ModalInfo.vue'
+import ModalEmail from '../components/ModalEmail.vue'
 
 const store = usePrenotazioniStore()
 

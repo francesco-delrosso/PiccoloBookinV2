@@ -156,7 +156,12 @@ def invia_messaggio(
     )
     db.add(msg)
 
-    if p.stato in ("Nuova", "Nuova Risposta"):
+    # Update stato based on action type
+    if data.tipo_azione == "accetta":
+        p.stato = "Attesa Bonifico"
+    elif data.tipo_azione == "rifiuta":
+        p.stato = "Rifiutata"
+    elif p.stato in ("Nuova", "Nuova Risposta"):
         p.stato = "In lavorazione"
 
     db.commit()

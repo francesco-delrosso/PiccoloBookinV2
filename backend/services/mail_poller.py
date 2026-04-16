@@ -219,6 +219,133 @@ def _discard(from_addr: str, subject: str, settings: dict) -> bool:
 
 
 # ---------------------------------------------------------------------------
+# Website form email parser (Level 0 — regex, no Ollama)
+# ---------------------------------------------------------------------------
+_FORM_EMAIL_RE = re.compile(r"Email:\s*(\S+@\S+)")
+_FORM_TELEFONO_RE = re.compile(r"Telefono:\s*(\S+)")
+_FORM_ARRIVO_RE = re.compile(r"Arrivo:\s*(\d{1,2}[-/\.]\d{1,2}[-/\.]\d{4})")
+_FORM_PARTENZA_RE = re.compile(r"Partenza:\s*(\d{1,2}[-/\.]\d{1,2}[-/\.]\d{4})")
+_FORM_POSTO_RE = re.compile(r"Posto per:\s*(.+)", re.IGNORECASE)
+_FORM_ADULTI_RE = re.compile(r"Adulti:\s*(\d+)")
+_FORM_BAMBINI_RE = re.compile(r"Bambini:\s*(\d+)")
+_FORM_MESSAGGIO_RE = re.compile(r"Messaggio:\s*(.*)", re.DOTALL)
+_FORM_NAME_LINE_RE = re.compile(
+    r"dati inseriti dal cliente:\s*\n\s*(.+?)\s*-\s*Email:",
+    re.IGNORECASE | re.DOTALL,
+)
+
+
+def _is_form_email(from_addr: str, settings: dict) -> bool:
+    """Check if sender is the website contact form."""
+    form_addr = settings.get("email_form_sito", "").lower()
+    return bool(form_addr) and from_addr.lower() == form_addr
+
+
+def _convert_form_date(date_str: str | None) -> str | None:
+    """Convert DD-MM-YYYY or DD/MM/YYYY to YYYY-MM-DD."""
+    if not date_str:
+        return None
+    for fmt in ("%d-%m-%Y", "%d/%m/%Y", "%d.%m.%Y"):
+        try:
+            return datetime.strptime(date_str.strip(), fmt).strftime("%Y-%m-%d")
+        except ValueError:
+            continue
+    return date_str
+
+
+def _map_posto_per(raw: str | None) -> str | None:
+    """Map free-text accommodation to standard key."""
+    if not raw:
+        return None
+    low = raw.lower()
+    if "tenda" in low:
+        return "tenda"
+    if "camper" in low:
+        return "camper"
+    if any(k in low for k in ("caravan", "roulotte")):
+        return "caravan"
+    if "bungalow" in low:
+        return "bungalow"
+    return raw.strip()
+
+
+def _parse_form_body(body: str, subject: str) -> dict | None:
+    """Parse structured body from website contact form.
+
+    Returns dict with same keys as Ollama parse_email output,
+    plus 'client_email' with the real customer email.
+    Returns None if body doesn't look like a form submission.
+    """
+    if "dati inseriti dal cliente" not in body.lower():
+        return None
+
+    em = _FORM_EMAIL_RE.search(body)
+    if not em:
+        return None
+
+    client_email = em.group(1).strip().lower().rstrip(".")
+
+    # Extract name from body: "Name Surname - Email: ..."
+    nome = None
+    cognome = None
+    nm = _FORM_NAME_LINE_RE.search(body)
+    if nm:
+        name_parts = nm.group(1).strip().split()
+        if len(name_parts) >= 2:
+            nome = name_parts[0]
+            cognome = " ".join(name_parts[1:])
+        elif name_parts:
+            nome = name_parts[0]
+
+    tel = _FORM_TELEFONO_RE.search(body)
+    arr = _FORM_ARRIVO_RE.search(body)
+    dep = _FORM_PARTENZA_RE.search(body)
+    posto = _FORM_POSTO_RE.search(body)
+    adu = _FORM_ADULTI_RE.search(body)
+    bam = _FORM_BAMBINI_RE.search(body)
+    msg = _FORM_MESSAGGIO_RE.search(body)
+
+    # Determine tipo from subject
+    subj_low = subject.lower()
+    is_prenotazione = "prenotazione" in subj_low or (arr is not None)
+    tipo = "prenotazione" if is_prenotazione else "contatto"
+
+    # Detect language from message text
+    lingua = "IT"
+    msg_text = msg.group(1).strip() if msg else ""
+    if msg_text:
+        for word, lang in [("dear", "EN"), ("please", "EN"), ("would like", "EN"),
+                           ("lieber", "DE"), ("möchten", "DE"), ("gerne", "DE"),
+                           ("cher", "FR"), ("nous", "FR"), ("voudrions", "FR"),
+                           ("graag", "NL"), ("hebben", "NL"), ("zouden", "NL")]:
+            if word in msg_text.lower():
+                lingua = lang
+                break
+
+    bambini_val = None
+    if bam:
+        try:
+            bambini_val = int(bam.group(1))
+        except ValueError:
+            pass
+
+    return {
+        "client_email": client_email,
+        "tipo": tipo,
+        "nome": nome,
+        "cognome": cognome,
+        "telefono": tel.group(1).strip() if tel else None,
+        "data_arrivo": _convert_form_date(arr.group(1)) if arr else None,
+        "data_partenza": _convert_form_date(dep.group(1)) if dep else None,
+        "adulti": int(adu.group(1)) if adu else None,
+        "bambini": bambini_val,
+        "posto_per": _map_posto_per(posto.group(1)) if posto else None,
+        "lingua": lingua,
+        "confidenza": 1.0,
+    }
+
+
+# ---------------------------------------------------------------------------
 # IMAP operations
 # ---------------------------------------------------------------------------
 def _connect_imap(settings: dict) -> imaplib.IMAP4:
@@ -760,13 +887,100 @@ def poll_emails(db, limit: int = 20) -> dict:
 
         for root_id, members in threads.items():
             try:
-                # Find first customer message
+                # ── L0 — Website form fast-path ──
+                # Emails from email_form_sito (contatti@...) contain structured
+                # booking data. Parse with regex, extract real client email, skip Ollama.
+                form_msg_id = None
+                for mid in members:
+                    hdr = header_map[mid]
+                    if _is_form_email(hdr["from_addr"], settings):
+                        form_msg_id = mid
+                        break
+
+                if form_msg_id and not _already_processed(db, form_msg_id):
+                    form_hdr = header_map[form_msg_id]
+                    form_body = _fetch_body(conn, form_hdr["uid"], form_hdr["folder"])
+                    form_parsed = _parse_form_body(form_body, form_hdr["subject"])
+
+                    if form_parsed:
+                        client_email = form_parsed.pop("client_email")
+                        logger.info("L0 form: %s → client %s", form_hdr["subject"], client_email)
+
+                        # Check if client already has a prenotazione
+                        existing = _known_client(db, client_email)
+                        if existing:
+                            # Append form message to existing thread
+                            bodies = {form_msg_id: form_body}
+                            _append_to_thread(db, existing, [form_msg_id], header_map, bodies, settings)
+                            processed += 1
+                            continue
+
+                        # Create new prenotazione with REAL client email
+                        pren = Prenotazione(
+                            tipo_richiesta="Prenotazione" if form_parsed["tipo"] == "prenotazione" else "Contatto",
+                            nome=form_parsed.get("nome"),
+                            cognome=form_parsed.get("cognome"),
+                            telefono=form_parsed.get("telefono"),
+                            email=client_email,
+                            data_arrivo=form_parsed.get("data_arrivo"),
+                            data_partenza=form_parsed.get("data_partenza"),
+                            adulti=form_parsed.get("adulti"),
+                            bambini=form_parsed.get("bambini"),
+                            posto_per=form_parsed.get("posto_per"),
+                            stato="Nuova",
+                            message_id=form_msg_id,
+                            lingua_suggerita=form_parsed.get("lingua", "IT"),
+                        )
+                        db.add(pren)
+                        db.flush()
+
+                        # Add the form message
+                        db.add(StoricoMessaggio(
+                            id_prenotazione=pren.id,
+                            mittente="Cliente",
+                            testo=form_body,
+                            message_id=form_msg_id if not form_msg_id.startswith("_no_mid_") else None,
+                            data_ora=form_hdr["date"],
+                        ))
+
+                        # Also fetch+add any other thread messages (replies)
+                        for mid in members:
+                            if mid == form_msg_id or _already_processed(db, mid):
+                                continue
+                            try:
+                                hdr = header_map[mid]
+                                body = _fetch_body(conn, hdr["uid"], hdr["folder"])
+                                mitt = _determine_mittente(hdr["from_addr"], settings)
+                                db.add(StoricoMessaggio(
+                                    id_prenotazione=pren.id,
+                                    mittente=mitt,
+                                    testo=body,
+                                    message_id=mid if not mid.startswith("_no_mid_") else None,
+                                    data_ora=hdr["date"],
+                                ))
+                            except Exception:
+                                pass
+
+                        db.commit()
+                        processed += 1
+                        logger.info("L0 form: new prenotazione #%d for %s", pren.id, client_email)
+                        continue
+
+                # ── Find first customer message ──
                 first_cust_id = None
                 for mid in members:
                     hdr = header_map[mid]
                     if _determine_mittente(hdr["from_addr"], settings) == "Cliente":
                         first_cust_id = mid
                         break
+                if not first_cust_id:
+                    # All messages are from campsite — check if form email that
+                    # didn't match the regex parser (use Ollama as fallback)
+                    for mid in members:
+                        hdr = header_map[mid]
+                        if _is_form_email(hdr["from_addr"], settings):
+                            first_cust_id = mid
+                            break
                 if not first_cust_id:
                     continue
 
@@ -779,8 +993,8 @@ def poll_emails(db, limit: int = 20) -> dict:
                 if all_known:
                     continue
 
-                # L1 — spam filter
-                if _discard(customer_email, subject, settings):
+                # L1 — spam filter (skip for form emails)
+                if not _is_form_email(customer_email, settings) and _discard(customer_email, subject, settings):
                     continue
 
                 # L2 — check if any message belongs to a known thread

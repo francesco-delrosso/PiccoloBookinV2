@@ -194,13 +194,40 @@ function removeVoce(id) {
 async function load() {
   try {
     const { data } = await getPrezzi()
-    listino.value = data
-    const n = listino.value.stagioni.length
-    listino.value.voci.forEach(v => {
-      while (v.prezzi.length < n) v.prezzi.push(0)
-      if (!('note' in v)) v.note = ''
-      if (!v.id) v.id = `voce_${Date.now()}_${_nextId++}`
+    const l = data
+    const n = l.stagioni.length
+
+    // Migrate stagioni: old format {da, a} → new format periodi arrays
+    l.stagioni.forEach(s => {
+      if (!s.colore) s.colore = '#888888'
+      if (!s.periodi) {
+        // Old format: {da: "01/04", a: "14/06"} or {da: "2026-04-01", a: "2026-06-14"}
+        s.periodi = [[s.da || '', s.a || '']]
+      }
+      // Ensure periodi are arrays of [start, end]
+      s.periodi = s.periodi.map(p => Array.isArray(p) ? p : [p.da || '', p.a || ''])
     })
+
+    // Migrate voci: old format {prezzi: {"Bassa": 10}} → new format {prezzi: [10, 14, 18]}
+    l.voci.forEach(v => {
+      if (!v.id) v.id = `voce_${Date.now()}_${_nextId++}`
+      if (!('note' in v)) v.note = ''
+      if (!v.categoria) v.categoria = 'Altro'
+
+      // Convert object prezzi to array
+      if (v.prezzi && !Array.isArray(v.prezzi)) {
+        const obj = v.prezzi
+        v.prezzi = l.stagioni.map(s => {
+          // Try by season name (case-insensitive)
+          const key = Object.keys(obj).find(k => k.toLowerCase() === s.nome.toLowerCase())
+          return key ? (obj[key] || 0) : 0
+        })
+      }
+      if (!v.prezzi) v.prezzi = []
+      while (v.prezzi.length < n) v.prezzi.push(0)
+    })
+
+    listino.value = l
   } catch (e) {
     showToast('Errore caricamento listino', 'error')
   }

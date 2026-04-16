@@ -26,6 +26,7 @@ import json
 
 from database import SessionLocal
 from models import Prenotazione, StoricoMessaggio, Impostazione, ModelloMail
+from services.smart_parser import parse_email as ollama_parse
 
 logger = logging.getLogger(__name__)
 
@@ -266,6 +267,7 @@ def _parse_form_body(body: str, subject: str) -> dict | None:
         "bambini": bambini_val,
         "posto_per": _map_posto_per(posto.group(1)) if posto else None,
         "lingua": lingua,
+        "_messaggio": msg_text,  # raw message text for Ollama enrichment
     }
 
 
@@ -446,6 +448,63 @@ def _campsite_addrs(settings: dict) -> set[str]:
     }
     addrs.discard("")
     return addrs
+
+
+def _enrich_with_ollama(db, pren: Prenotazione, message_text: str, settings: dict):
+    """If prenotazione is missing key fields, use Ollama to extract them from the message.
+    Only called for 'Contatto' type where regex couldn't extract structured data."""
+    # Skip if we already have dates (structured form had them)
+    if pren.data_arrivo and pren.data_partenza:
+        return
+
+    try:
+        parsed = ollama_parse(pren.email or "", "", message_text, settings)
+    except Exception as ex:
+        logger.warning("Ollama enrich failed for #%d: %s", pren.id, ex)
+        return
+
+    if not parsed:
+        return
+
+    # Only fill fields that are currently empty
+    updated = []
+    if not pren.nome and parsed.get("nome"):
+        pren.nome = parsed["nome"]
+        updated.append("nome")
+    if not pren.cognome and parsed.get("cognome"):
+        pren.cognome = parsed["cognome"]
+        updated.append("cognome")
+    if not pren.telefono and parsed.get("telefono"):
+        pren.telefono = parsed["telefono"]
+        updated.append("telefono")
+    if not pren.data_arrivo and parsed.get("data_arrivo"):
+        pren.data_arrivo = parsed["data_arrivo"]
+        updated.append("data_arrivo")
+    if not pren.data_partenza and parsed.get("data_partenza"):
+        pren.data_partenza = parsed["data_partenza"]
+        updated.append("data_partenza")
+    if not pren.adulti and parsed.get("adulti"):
+        pren.adulti = parsed["adulti"]
+        updated.append("adulti")
+    if not pren.bambini and parsed.get("bambini"):
+        pren.bambini = parsed["bambini"]
+        updated.append("bambini")
+    if not pren.posto_per and parsed.get("posto_per"):
+        pren.posto_per = parsed["posto_per"]
+        updated.append("posto_per")
+    if not pren.lingua_suggerita and parsed.get("lingua"):
+        pren.lingua_suggerita = parsed["lingua"]
+        updated.append("lingua")
+
+    # Upgrade to Prenotazione if Ollama found dates
+    if pren.data_arrivo and pren.data_partenza and pren.tipo_richiesta == "Contatto":
+        if parsed.get("tipo") == "prenotazione":
+            pren.tipo_richiesta = "Prenotazione"
+            updated.append("tipo→Prenotazione")
+
+    if updated:
+        db.commit()
+        logger.info("Ollama enriched #%d: %s", pren.id, ", ".join(updated))
 
 
 def _is_form_email(from_addr: str, settings: dict) -> bool:
@@ -658,6 +717,10 @@ def poll_emails(db, limit: int = 20) -> dict:
                     processed += 1
                     logger.info("Poll: new %s from %s (%s)", parsed["tipo"], client_email, subject[:50])
 
+                    # Enrich with Ollama if Contatto (extract dates/info from free text)
+                    msg_text = parsed.get("_messaggio") or body
+                    _enrich_with_ollama(db, pren, msg_text, settings)
+
                     # Auto-reject if dates overlap with closed dates
                     _check_auto_reject(db, pren, settings)
                     continue
@@ -809,6 +872,7 @@ def import_full_history(
                         testo=body, message_id=mid, data_ora=hdr["date"],
                     ))
                     db.commit()
+                    _enrich_with_ollama(db, pren, body, settings)
                     _check_auto_reject(db, pren, settings)
 
                 form_count += 1

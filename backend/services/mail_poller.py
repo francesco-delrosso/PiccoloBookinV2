@@ -62,7 +62,7 @@ _SPAM_DOMAIN_KEYWORDS = [
     "facebook.", "twitter.", "linkedin.", "instagram.", "tiktok.",
     "pinterest.", "youtube.",
     # Tech platforms
-    "google.com",  # alerts, analytics, ads
+    # google.com removed — would match googlemail.com (European Gmail users)
     "amazonaws.com", "azure.", "cloudflare.",
     # E-commerce/services
     "shopify.", "amazon.", "ebay.", "aliexpress.",
@@ -278,6 +278,46 @@ def _discard(from_addr: str, subject: str, settings: dict) -> bool:
             return True
 
     return False
+
+
+# ---------------------------------------------------------------------------
+# Content filter (L1.5) — camping keyword check
+# ---------------------------------------------------------------------------
+_CAMPING_KEYWORDS = {
+    # Accommodation types
+    "camping", "campeggio", "campingplatz", "campingplace",
+    "tent", "tenda", "zelt", "tente",
+    "camper", "motorhome", "wohnmobil", "camping-car", "kastenwagen", "van",
+    "caravan", "roulotte", "wohnwagen",
+    "bungalow", "chalet", "mobilhome", "mobile home",
+    "pitch", "piazzola", "stellplatz", "emplacement", "standplaats",
+    # Stay/booking
+    "holiday", "holidays", "vacation", "vacanza", "vacanze", "ferie",
+    "urlaub", "ferien", "vacances", "vakantie",
+    "booking", "book", "prenotazione", "prenotare", "prenota",
+    "reservation", "reservierung", "réservation", "reservering",
+    "disponibilità", "availability", "verfügbarkeit", "disponibilité",
+    # Dates/stay
+    "arrive", "arrivo", "ankunft", "arrivée", "aankomst",
+    "depart", "partenza", "abreise", "départ", "vertrek",
+    "check-in", "check-out", "notte", "notti", "night", "nights",
+    "nacht", "nächte", "nuit", "nuits",
+    # Location
+    "lago", "lake", "see", "lac", "meer", "como",
+    "piccolo camping",
+    # People
+    "adulti", "adults", "erwachsene", "adultes", "volwassenen",
+    "bambini", "children", "kinder", "enfants", "kinderen",
+    # Form emails
+    "dati inseriti dal cliente", "richiesta dal sito", "form di contatti",
+}
+
+
+def _has_camping_content(subject: str, body: str) -> bool:
+    """L1.5: check if email mentions any camping-related keywords.
+    If not, it's almost certainly not a camping inquiry."""
+    text = f"{subject} {body}".lower()
+    return any(kw in text for kw in _CAMPING_KEYWORDS)
 
 
 # ---------------------------------------------------------------------------
@@ -1108,6 +1148,12 @@ def poll_emails(db, limit: int = 20) -> dict:
                         except Exception as ex:
                             logger.error("Poll body fetch error: %s", ex)
 
+                # L1.5 — camping content check (before wasting Ollama call)
+                first_body = bodies.get(first_cust_id, "")
+                if not _has_camping_content(subject, first_body):
+                    logger.info("L1.5 scartata (no camping keywords): %s — %s", customer_email, subject[:60])
+                    continue
+
                 parsed = _process_thread_with_ollama(root_id, members, header_map, bodies, settings)
                 if parsed is None:
                     continue  # spam or error
@@ -1212,7 +1258,69 @@ def import_full_history(
 
         for root_id, members in threads.items():
             try:
-                # Find first customer message
+                # ── L0 — Website form fast-path ──
+                form_msg_id = None
+                for mid in members:
+                    hdr = header_map[mid]
+                    if _is_form_email(hdr["from_addr"], settings):
+                        form_msg_id = mid
+                        break
+
+                if form_msg_id and not _already_processed(db, form_msg_id):
+                    form_hdr = header_map[form_msg_id]
+                    form_body = _fetch_body(conn, form_hdr["uid"], form_hdr["folder"])
+                    form_parsed = _parse_form_body(form_body, form_hdr["subject"])
+
+                    if form_parsed:
+                        client_email = form_parsed.pop("client_email")
+                        existing = _known_client(db, client_email)
+                        if existing:
+                            bodies = {form_msg_id: form_body}
+                            _append_to_thread(db, existing, [form_msg_id], header_map, bodies, settings)
+                        else:
+                            pren = Prenotazione(
+                                tipo_richiesta="Prenotazione" if form_parsed["tipo"] == "prenotazione" else "Contatto",
+                                nome=form_parsed.get("nome"),
+                                cognome=form_parsed.get("cognome"),
+                                telefono=form_parsed.get("telefono"),
+                                email=client_email,
+                                data_arrivo=form_parsed.get("data_arrivo"),
+                                data_partenza=form_parsed.get("data_partenza"),
+                                adulti=form_parsed.get("adulti"),
+                                bambini=form_parsed.get("bambini"),
+                                posto_per=form_parsed.get("posto_per"),
+                                stato="Nuova",
+                                message_id=form_msg_id,
+                                lingua_suggerita=form_parsed.get("lingua", "IT"),
+                            )
+                            db.add(pren)
+                            db.flush()
+                            db.add(StoricoMessaggio(
+                                id_prenotazione=pren.id, mittente="Cliente",
+                                testo=form_body, message_id=form_msg_id,
+                                data_ora=form_hdr["date"],
+                            ))
+                            # Add other thread messages (replies)
+                            for mid in members:
+                                if mid == form_msg_id or _already_processed(db, mid):
+                                    continue
+                                try:
+                                    h = header_map[mid]
+                                    b = _fetch_body(conn, h["uid"], h["folder"])
+                                    db.add(StoricoMessaggio(
+                                        id_prenotazione=pren.id,
+                                        mittente=_determine_mittente(h["from_addr"], settings),
+                                        testo=b, message_id=mid, data_ora=h["date"],
+                                    ))
+                                except Exception:
+                                    pass
+                            db.commit()
+                            processed_threads += 1
+                            logger.info("[FULL-L0] form → #%d %s", pren.id, client_email)
+                        _update_state(processed=job_state.get("processed", 0) + 1 if job_state else 0)
+                        continue
+
+                # ── Find first customer message ──
                 first_cust_id = None
                 customer_email = ""
                 subject = ""
@@ -1243,7 +1351,7 @@ def import_full_history(
                     pren = _known_client(db, customer_email)
 
                 if pren is not None:
-                    # L2 — append new messages to existing thread (sequential, needs IMAP)
+                    # L2 — append new messages to existing thread
                     new_mids = [mid for mid in members if not _already_processed(db, mid)]
                     if new_mids:
                         bodies = {}
@@ -1257,7 +1365,6 @@ def import_full_history(
                         if added:
                             processed_threads += 1
                             processed_msgs += added
-                            logger.info("[FULL-L2] %s: +%d msgs to #%d", customer_email, added, pren.id)
                     _update_state(processed=job_state.get("processed", 0) + 1 if job_state else 0)
                     continue
 
@@ -1280,6 +1387,13 @@ def import_full_history(
                             logger.error("[FULL] body fetch error: %s", ex)
 
                 if first_cust_id not in bodies:
+                    _update_state(processed=job_state.get("processed", 0) + 1 if job_state else 0)
+                    continue
+
+                # L1.5 — camping content check (before wasting Ollama)
+                first_body = bodies.get(first_cust_id, "")
+                if not _has_camping_content(subject, first_body):
+                    logger.info("[FULL-L1.5] no camping keywords: %s — %s", customer_email, subject[:60])
                     _update_state(processed=job_state.get("processed", 0) + 1 if job_state else 0)
                     continue
 

@@ -129,10 +129,14 @@
     </div>
 
     <!-- Action Buttons -->
-    <div class="flex items-center gap-2 pt-4 border-t border-border">
+    <div class="flex items-center gap-2 flex-wrap pt-4 border-t border-border">
       <button @click="$emit('action', 'accetta')"
         class="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors">
         Accetta
+      </button>
+      <button @click="$emit('action', 'accetta_noCaparra')"
+        class="px-4 py-2 bg-green-500 text-white text-sm font-medium rounded-lg hover:bg-green-600 transition-colors border border-green-600">
+        Accetta senza caparra
       </button>
       <button @click="$emit('action', 'rifiuta')"
         class="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors">

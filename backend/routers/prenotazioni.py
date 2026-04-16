@@ -159,6 +159,8 @@ def invia_messaggio(
     # Update stato based on action type
     if data.tipo_azione == "accetta":
         p.stato = "Attesa Bonifico"
+    elif data.tipo_azione == "accetta_noCaparra":
+        p.stato = "Confermata"
     elif data.tipo_azione == "rifiuta":
         p.stato = "Rifiutata"
     elif p.stato in ("Nuova", "Nuova Risposta"):

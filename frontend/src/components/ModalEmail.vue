@@ -66,7 +66,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
-import { getModelli, getImpostazioni, inviaMessaggio } from '../api'
+import { getModelli, getImpostazioni, getPrezzi, inviaMessaggio, updatePrenotazione } from '../api'
 import { usePrenotazioniStore } from '../stores/prenotazioni'
 
 const props = defineProps({
@@ -87,9 +87,13 @@ const editSubject = ref('')
 const editBody = ref('')
 const sending = ref(false)
 
+// Template type: accetta_noCaparra uses 'accetta' template but different title/status
+const templateTipo = computed(() => props.tipo === 'accetta_noCaparra' ? 'accetta' : props.tipo)
+
 const config = computed(() => {
   const map = {
     accetta: { title: 'Accetta prenotazione', headerBg: 'bg-green-50', headerText: 'text-green-800', sendBtn: 'bg-green-600 hover:bg-green-700', sendLabel: 'Invia accettazione' },
+    accetta_noCaparra: { title: 'Accetta senza caparra', headerBg: 'bg-green-50', headerText: 'text-green-800', sendBtn: 'bg-green-600 hover:bg-green-700', sendLabel: 'Invia conferma' },
     rifiuta: { title: 'Rifiuta prenotazione', headerBg: 'bg-red-50', headerText: 'text-red-800', sendBtn: 'bg-red-600 hover:bg-red-700', sendLabel: 'Invia rifiuto' },
     info: { title: 'Invia informazioni', headerBg: 'bg-blue-50', headerText: 'text-blue-800', sendBtn: 'bg-secondary hover:bg-secondary-dark', sendLabel: 'Invia' },
   }
@@ -145,20 +149,80 @@ function applyTemplate(template) {
 
 function switchLingua(l) {
   lingua.value = l
-  const tpl = modelli.value.find(m => m.lingua === l && m.tipo === props.tipo)
+  const tpl = modelli.value.find(m => m.lingua === l && m.tipo === templateTipo.value)
   applyTemplate(tpl)
 }
 
+// --- Auto-calculate cost if missing ---
+function autoCalcCosto(listino, p) {
+  if (!listino || !p.data_arrivo || !p.data_partenza || !p.adulti) return null
+
+  const stagioni = listino.stagioni || []
+  const voci = listino.voci || []
+
+  function getSeasonIdx(dateStr) {
+    const d = new Date(dateStr)
+    for (let si = 0; si < stagioni.length; si++) {
+      for (const per of stagioni[si].periodi) {
+        const from = new Date(Array.isArray(per) ? per[0] : per.da)
+        const to = new Date(Array.isArray(per) ? per[1] : per.a)
+        if (d >= from && d <= to) return si
+      }
+    }
+    return 0 // fallback to first season
+  }
+
+  // Count nights per season
+  const nights = {}
+  const start = new Date(p.data_arrivo)
+  const end = new Date(p.data_partenza)
+  const cur = new Date(start)
+  while (cur < end) {
+    const si = getSeasonIdx(cur.toISOString().slice(0, 10))
+    nights[si] = (nights[si] || 0) + 1
+    cur.setDate(cur.getDate() + 1)
+  }
+
+  const findVoce = (kw) => voci.find(v => v.nome.toLowerCase().includes(kw.toLowerCase()))
+  const adultoV = findVoce('adulto')
+  const bambinoV = findVoce('bambino (3') || findVoce('bambino')
+  const piazzolaV = findVoce('piazzola con luce') || findVoce('piazzola luce') || findVoce('piazzola')
+
+  let total = 0
+  for (const [si, n] of Object.entries(nights)) {
+    const idx = parseInt(si)
+    if (adultoV) total += (p.adulti || 0) * n * (adultoV.prezzi[idx] || 0)
+    if (bambinoV) total += (p.bambini || 0) * n * (bambinoV.prezzi[idx] || 0)
+    if (piazzolaV) total += n * (piazzolaV.prezzi[idx] || 0)
+  }
+  return Math.round(total * 100) / 100
+}
+
 onMounted(async () => {
+  let listino = null
   try {
-    const [modRes, settRes] = await Promise.all([getModelli(), getImpostazioni()])
+    const [modRes, settRes, prezziRes] = await Promise.all([getModelli(), getImpostazioni(), getPrezzi()])
     modelli.value = modRes.data
     const capRow = settRes.data.find(s => s.chiave === 'caparra_percentuale')
     if (capRow) caparraPerc.value = parseInt(capRow.valore) || 30
+    listino = prezziRes.data
   } catch { /* ignore */ }
 
+  // Auto-calculate cost if not set
+  const p = props.prenotazione
+  if (p && (!p.costo_totale || p.costo_totale === 0) && listino) {
+    const calc = autoCalcCosto(listino, p)
+    if (calc && calc > 0) {
+      // Save to DB so it persists
+      try {
+        await updatePrenotazione(p.id, { costo_totale: calc })
+        p.costo_totale = calc // update local ref too
+      } catch { /* ignore */ }
+    }
+  }
+
   // Apply initial template
-  const tpl = modelli.value.find(m => m.lingua === lingua.value && m.tipo === props.tipo)
+  const tpl = modelli.value.find(m => m.lingua === lingua.value && m.tipo === templateTipo.value)
   applyTemplate(tpl)
 })
 

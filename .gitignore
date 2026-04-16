@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+*.pyo
+backend/venv/
+backend/camping.db
+frontend/node_modules/
+frontend/dist/
+.DS_Store

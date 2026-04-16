@@ -9,7 +9,7 @@ from uuid import uuid4
 from fastapi import APIRouter, Depends, BackgroundTasks
 from sqlalchemy.orm import Session
 
-from database import get_db, SessionLocal
+from database import get_db
 from models import Impostazione
 from services.mail_poller import (
     poll_emails, import_full_history, reset_and_reimport,

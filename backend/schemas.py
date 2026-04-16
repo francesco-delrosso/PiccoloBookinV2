@@ -89,11 +89,6 @@ class ModelloMailUpdate(BaseModel):
     corpo: Optional[str] = None
 
 
-class InviaMailRequest(BaseModel):
-    modello_id: int
-    testo_aggiuntivo: Optional[str] = ""
-
-
 class InviaMessaggioRequest(BaseModel):
     testo: str
     soggetto: Optional[str] = ""

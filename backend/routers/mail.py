@@ -13,8 +13,8 @@ from database import get_db, SessionLocal
 from models import Impostazione
 from services.mail_poller import (
     poll_emails, import_full_history, reset_and_reimport,
-    _connect_imap, _batch_fetch_headers, _find_sent_folder,
-    _discard, _has_camping_content, _is_form_email, _determine_mittente,
+    _connect_imap, _batch_fetch_headers,
+    _is_form_email, _campsite_addrs, _known_client,
 )
 from services.mail_sender import test_smtp, test_imap
 
@@ -189,21 +189,24 @@ def scan_headers(limit: int = 50, db: Session = Depends(get_db)):
     conn = _connect_imap(settings)
     try:
         headers = _batch_fetch_headers(conn, "INBOX", limit=limit)
+        camping = _campsite_addrs(settings)
         results = []
         for mid, hdr in sorted(headers.items(), key=lambda x: x[1].get("date") or "", reverse=True):
             from_addr = hdr["from_addr"]
             subject = hdr["subject"]
             date = str(hdr.get("date", ""))
 
-            # Determine what filter would do
             if _is_form_email(from_addr, settings):
-                verdict = "L0-FORM"
-            elif _determine_mittente(from_addr, settings) == "Campeggio":
+                verdict = "FORM"
+            elif from_addr in camping:
                 verdict = "CAMPEGGIO"
-            elif _discard(from_addr, subject, settings):
-                verdict = "L1-SPAM"
             else:
-                verdict = "PASS→Ollama"
+                # Check if known client
+                pren = _known_client(db, from_addr)
+                if pren:
+                    verdict = f"REPLY→#{pren.id}"
+                else:
+                    verdict = "IGNORA"
 
             results.append({
                 "from": from_addr,

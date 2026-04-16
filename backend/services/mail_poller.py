@@ -838,10 +838,16 @@ def _process_thread_with_ollama(
         logger.info("Ollama spam: %s (%.2f)", hdr["from_addr"], conf)
         return None
 
-    # If Ollama returned fallback (conf=0, no classification) — don't import blindly
+    # If Ollama returned fallback (conf=0, no real data extracted):
+    # Check if body has camping keywords — if yes, keep as Contatto
+    # If no keywords either, skip (probably not camping-related)
     if conf == 0.0 and not parsed.get("nome") and not parsed.get("data_arrivo"):
-        logger.info("Ollama inconclusive (fallback?), skipping: %s", hdr["from_addr"])
-        return None
+        if _has_camping_content(hdr["subject"], body):
+            logger.info("Ollama fallback but has camping keywords, keeping as contatto: %s", hdr["from_addr"])
+            parsed["tipo"] = "contatto"
+        else:
+            logger.info("Ollama inconclusive + no camping keywords, skipping: %s", hdr["from_addr"])
+            return None
 
     return _fix_dates(parsed)
 

@@ -25,5 +25,6 @@ const navLinks = [
   { to: '/', label: 'Dashboard' },
   { to: '/impostazioni', label: 'Impostazioni' },
   { to: '/prezzi', label: 'Prezzi' },
+  { to: '/calendario', label: 'Calendario' },
 ]
 </script>

@@ -22,8 +22,10 @@ import logging
 from datetime import datetime, timezone
 from html.parser import HTMLParser
 
+import json
+
 from database import SessionLocal
-from models import Prenotazione, StoricoMessaggio, Impostazione
+from models import Prenotazione, StoricoMessaggio, Impostazione, ModelloMail
 
 logger = logging.getLogger(__name__)
 
@@ -452,6 +454,126 @@ def _is_form_email(from_addr: str, settings: dict) -> bool:
 
 
 # ---------------------------------------------------------------------------
+# Auto-reject for closed dates
+# ---------------------------------------------------------------------------
+def _check_auto_reject(db, pren: Prenotazione, settings: dict) -> bool:
+    """Check if prenotazione dates overlap with closed dates.
+    If yes, auto-send rifiuta email and set stato=Rifiutata.
+    Returns True if auto-rejected."""
+    if not pren.data_arrivo or not pren.data_partenza:
+        return False
+
+    # Load closed dates
+    row = db.query(Impostazione).filter_by(chiave="date_chiuse").first()
+    if not row or not row.valore:
+        return False
+
+    try:
+        closed_dates = set(json.loads(row.valore))
+    except (json.JSONDecodeError, TypeError):
+        return False
+
+    if not closed_dates:
+        return False
+
+    # Check overlap: any night of the stay falls on a closed date?
+    try:
+        from datetime import date, timedelta
+        arr = date.fromisoformat(pren.data_arrivo)
+        dep = date.fromisoformat(pren.data_partenza)
+        current = arr
+        has_overlap = False
+        while current < dep:
+            if current.isoformat() in closed_dates:
+                has_overlap = True
+                break
+            current += timedelta(days=1)
+
+        if not has_overlap:
+            return False
+    except (ValueError, TypeError):
+        return False
+
+    # Auto-reject: find rifiuta template for the booking's language
+    lingua = pren.lingua_suggerita or "IT"
+    template = (
+        db.query(ModelloMail)
+        .filter_by(lingua=lingua, tipo="rifiuta")
+        .first()
+    )
+    if not template:
+        template = db.query(ModelloMail).filter_by(tipo="rifiuta").first()
+    if not template:
+        logger.warning("Auto-reject: no rifiuta template found for %s", pren.email)
+        return False
+
+    # Build email
+    replacements = {
+        "nome": pren.nome or "",
+        "cognome": pren.cognome or "",
+        "data_arrivo": pren.data_arrivo or "",
+        "data_partenza": pren.data_partenza or "",
+        "adulti": str(pren.adulti) if pren.adulti is not None else "",
+        "bambini": str(pren.bambini) if pren.bambini is not None else "",
+        "posto_per": pren.posto_per or "",
+        "costo_totale": "",
+        "caparra": "",
+        "caparra_percentuale": settings.get("caparra_percentuale", "30"),
+        "testo_aggiuntivo": "",
+    }
+
+    try:
+        corpo = template.corpo
+        soggetto = template.soggetto or ""
+        for key, val in replacements.items():
+            corpo = corpo.replace("{" + key + "}", val)
+            soggetto = soggetto.replace("{" + key + "}", val)
+    except Exception:
+        return False
+
+    # Send email
+    try:
+        from services.mail_sender import send_email
+
+        # Find last message for In-Reply-To
+        last_msg = (
+            db.query(StoricoMessaggio)
+            .filter_by(id_prenotazione=pren.id)
+            .order_by(StoricoMessaggio.data_ora.desc())
+            .first()
+        )
+        reply_to = last_msg.message_id if last_msg else None
+
+        new_mid = send_email(
+            to_addr=pren.email,
+            subject=soggetto,
+            body=corpo,
+            settings=settings,
+            reply_to_message_id=reply_to,
+        )
+
+        # Save sent message
+        db.add(StoricoMessaggio(
+            id_prenotazione=pren.id,
+            mittente="Campeggio",
+            testo=corpo,
+            message_id=new_mid,
+            data_ora=datetime.now(timezone.utc).replace(tzinfo=None),
+        ))
+        pren.stato = "Rifiutata"
+        db.commit()
+
+        logger.info("Auto-reject: %s (%s → %s) → sent rifiuta in %s",
+                     pren.email, pren.data_arrivo, pren.data_partenza, lingua)
+        return True
+
+    except Exception as ex:
+        logger.error("Auto-reject send failed for %s: %s", pren.email, ex)
+        db.rollback()
+        return False
+
+
+# ---------------------------------------------------------------------------
 # Public API — poll_emails
 # ---------------------------------------------------------------------------
 def poll_emails(db, limit: int = 20) -> dict:
@@ -535,6 +657,9 @@ def poll_emails(db, limit: int = 20) -> dict:
                     db.commit()
                     processed += 1
                     logger.info("Poll: new %s from %s (%s)", parsed["tipo"], client_email, subject[:50])
+
+                    # Auto-reject if dates overlap with closed dates
+                    _check_auto_reject(db, pren, settings)
                     continue
 
                 # 2. Skip campsite's own emails
@@ -684,6 +809,7 @@ def import_full_history(
                         testo=body, message_id=mid, data_ora=hdr["date"],
                     ))
                     db.commit()
+                    _check_auto_reject(db, pren, settings)
 
                 form_count += 1
                 processed += 1

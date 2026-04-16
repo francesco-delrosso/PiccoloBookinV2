@@ -28,16 +28,72 @@ logger = logging.getLogger(__name__)
 # Constants
 # ---------------------------------------------------------------------------
 _NOREPLY_PREFIXES = [
+    # Generic auto-senders
     "noreply", "no-reply", "no.reply", "donotreply", "do-not-reply",
-    "newsletter", "marketing", "billing", "fatture", "invoice",
-    "mailer-daemon", "postmaster", "notifications", "notification",
-    "alert", "alerts", "bounce", "support@nexi", "noreply@nexi",
-    "automailer", "daemon", "system",
+    "mailer-daemon", "postmaster", "automailer", "daemon", "system",
+    "bounce", "bounced", "return", "root", "abuse", "webmaster",
+    # Marketing/commercial
+    "newsletter", "marketing", "promo", "promozioni", "offerte",
+    "news", "info@newsletter", "comunicazioni", "commerciale",
+    # Billing/finance
+    "billing", "fatture", "invoice", "invoicing", "payment", "pagamenti",
+    "receipt", "ricevuta", "order", "orders", "ordini",
+    # Notifications
+    "notifications", "notification", "notifiche", "alert", "alerts",
+    "avviso", "avvisi", "update", "updates", "aggiornamenti",
+    # Support/tickets
+    "support@nexi", "noreply@nexi", "helpdesk", "ticket", "feedback",
+    "survey", "sondaggio", "customerservice",
+    # Social media
+    "facebookmail", "twittermail", "linkedin", "instagram",
+    # Tech services
+    "jira", "github", "gitlab", "bitbucket", "slack", "teams",
+    "wordpress", "wix",
 ]
 
 _SPAM_DOMAIN_KEYWORDS = [
-    "nexi.", "paypal.", "stripe.", "sendgrid.", "mailchimp.",
-    "constantcontact.", "hubspot.", "salesforce.",
+    # Payment/finance
+    "nexi.", "paypal.", "stripe.", "klarna.", "sumup.", "satispay.",
+    # Email marketing
+    "sendgrid.", "mailchimp.", "constantcontact.", "hubspot.", "salesforce.",
+    "sendinblue.", "brevo.", "mailjet.", "getresponse.", "activecampaign.",
+    "mailgun.", "sparkpost.", "mandrillapp.", "campaign-archive.",
+    # Social
+    "facebook.", "twitter.", "linkedin.", "instagram.", "tiktok.",
+    "pinterest.", "youtube.",
+    # Tech platforms
+    "google.com",  # alerts, analytics, ads
+    "amazonaws.com", "azure.", "cloudflare.",
+    # E-commerce/services
+    "shopify.", "amazon.", "ebay.", "aliexpress.",
+    "booking.com", "airbnb.", "expedia.", "tripadvisor.",
+    # Common spam sources for Italian businesses
+    # aruba.it — NOT hardcoded because campsite uses Aruba for email
+    # User can add it to filtro_domini_scarta if needed
+    "register.it", "godaddy.", "ovh.", "siteground.",
+    "iubenda.", "cookiebot.",
+    # Bulk mailers
+    "smtpout.", "bulk.", "mass.", "broadcast.",
+]
+
+# Subject keywords that indicate spam (checked case-insensitive)
+_SPAM_SUBJECT_KEYWORDS = [
+    # Italian
+    "fattura", "rinnovo", "scadenza", "pagamento", "ricevuta",
+    "ordine", "spedizione", "consegna", "abbonamento",
+    "preventivo", "offerta commerciale", "promozione",
+    "newsletter", "comunicazione di servizio",
+    # English
+    "invoice", "renewal", "payment", "receipt", "subscription",
+    "order confirmation", "shipping", "delivery", "unsubscribe",
+    "promotional", "special offer", "limited time",
+    # German
+    "rechnung", "zahlung", "lieferung", "bestellung",
+    # Commercial/vendor
+    "lavatrici", "asciugatrici", "pannelli solari", "fotovoltaico",
+    "noleggio", "fornitura", "preventivo", "listino",
+    "agenzia", "marketing digitale", "seo", "social media",
+    "sito web", "website", "e-commerce",
 ]
 
 _QUOTE_PATTERNS = [
@@ -207,12 +263,18 @@ def _discard(from_addr: str, subject: str, settings: dict) -> bool:
             logger.info("L1 scartata (dominio utente): %s", from_addr)
             return True
 
+    # Built-in subject keywords
+    subj_lower = subject.lower()
+    for kw in _SPAM_SUBJECT_KEYWORDS:
+        if kw in subj_lower:
+            logger.info("L1 scartata (subject kw '%s'): %s", kw, subject)
+            return True
+
     # User-configurable subject filter
     filtro_oggetti = settings.get("filtro_oggetto_scarta", "")
-    subj_lower = subject.lower()
     for o in [x.strip().lower() for x in filtro_oggetti.split(",") if x.strip()]:
         if o in subj_lower:
-            logger.info("L1 scartata (oggetto '%s'): %s", o, subject)
+            logger.info("L1 scartata (oggetto utente '%s'): %s", o, subject)
             return True
 
     return False
@@ -689,8 +751,17 @@ def _process_thread_with_ollama(
         logger.error("Ollama error for %s: %s", root_id, ex)
         return None
 
-    if parsed.get("tipo") == "spam" and parsed.get("confidenza", 0) >= 0.5:
-        logger.info("L2/Ollama spam: %s (%.2f)", hdr["from_addr"], parsed.get("confidenza", 0))
+    tipo = parsed.get("tipo", "")
+    conf = parsed.get("confidenza", 0)
+
+    # Discard spam
+    if tipo == "spam" and conf >= 0.5:
+        logger.info("Ollama spam: %s (%.2f)", hdr["from_addr"], conf)
+        return None
+
+    # If Ollama returned fallback (conf=0, no classification) — don't import blindly
+    if conf == 0.0 and not parsed.get("nome") and not parsed.get("data_arrivo"):
+        logger.info("Ollama inconclusive (fallback?), skipping: %s", hdr["from_addr"])
         return None
 
     return _fix_dates(parsed)

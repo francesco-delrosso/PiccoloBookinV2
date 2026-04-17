@@ -132,8 +132,11 @@
             <input v-model.number="form.costo_totale" type="number" min="0" step="0.01" class="field-input" />
           </div>
           <div>
-            <label class="field-label">Caparra &euro;</label>
-            <input :value="caparraDisplay" readonly class="field-input bg-gray-100" />
+            <label class="field-label">Caparra {{ caparraPerc }}% &euro;</label>
+            <div class="field-input bg-gray-100 font-semibold text-warm-dark">{{ caparraDisplay }}</div>
+          </div>
+          <div v-if="form.data_arrivo && form.data_partenza" class="col-span-2 flex items-end">
+            <span class="text-xs text-gray-400">{{ numNotti }} notti</span>
           </div>
         </div>
       </div>
@@ -235,6 +238,11 @@ const canCalcola = computed(() =>
 
 const caparraCalcolata = computed(() => (costoCalcolato.value * caparraPerc.value) / 100)
 const caparraDisplay = computed(() => ((form.value.costo_totale || 0) * caparraPerc.value / 100).toFixed(2))
+const numNotti = computed(() => {
+  if (!form.value.data_arrivo || !form.value.data_partenza) return 0
+  const ms = new Date(form.value.data_partenza) - new Date(form.value.data_arrivo)
+  return Math.max(0, Math.round(ms / 86400000))
+})
 
 function getSeasonForDate(dateStr) {
   if (!listino.value) return null

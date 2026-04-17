@@ -677,22 +677,8 @@ def poll_emails(db, limit: int = 20) -> dict:
 
                     client_email = parsed.pop("client_email")
 
-                    # Check if client already exists
-                    existing = _known_client(db, client_email)
-                    if existing:
-                        if not _already_processed(db, mid):
-                            db.add(StoricoMessaggio(
-                                id_prenotazione=existing.id,
-                                mittente="Cliente",
-                                testo=body,
-                                message_id=mid if not mid.startswith("_no_mid_") else None,
-                                data_ora=hdr["date"],
-                            ))
-                            db.commit()
-                            processed += 1
-                        continue
-
-                    # Create new Prenotazione
+                    # Always create NEW prenotazione per form submission
+                    # (don't merge with old bookings from same email)
                     pren = Prenotazione(
                         tipo_richiesta=parsed["tipo"],
                         nome=parsed.get("nome"),
@@ -733,8 +719,8 @@ def poll_emails(db, limit: int = 20) -> dict:
                 if from_addr in camping:
                     continue
 
-                # 3. Reply from known client → append to thread
-                # Check In-Reply-To / References first
+                # 3. Reply to existing thread → append
+                # ONLY match by In-Reply-To / References (NOT by email address)
                 pren = None
                 if hdr["in_reply_to"]:
                     pren = _find_pren_by_message_id(db, hdr["in_reply_to"])
@@ -745,9 +731,6 @@ def poll_emails(db, limit: int = 20) -> dict:
                             pren = _find_pren_by_message_id(db, ref_clean)
                             if pren:
                                 break
-                # Fallback: check by email address
-                if not pren:
-                    pren = _known_client(db, from_addr)
 
                 if pren:
                     body = _fetch_body(conn, hdr["uid"], hdr["folder"])
@@ -851,33 +834,27 @@ def import_full_history(
                     continue
 
                 client_email = parsed.pop("client_email")
-                existing = _known_client(db, client_email)
-                if existing:
-                    db.add(StoricoMessaggio(
-                        id_prenotazione=existing.id, mittente="Cliente",
-                        testo=body, message_id=mid, data_ora=hdr["date"],
-                    ))
-                    db.commit()
-                else:
-                    pren = Prenotazione(
-                        tipo_richiesta=parsed["tipo"],
-                        nome=parsed.get("nome"), cognome=parsed.get("cognome"),
-                        telefono=parsed.get("telefono"), email=client_email,
-                        data_arrivo=parsed.get("data_arrivo"),
-                        data_partenza=parsed.get("data_partenza"),
-                        adulti=parsed.get("adulti"), bambini=parsed.get("bambini"),
-                        posto_per=parsed.get("posto_per"), stato="Nuova",
-                        message_id=mid, lingua_suggerita=parsed.get("lingua", "IT"),
-                    )
-                    db.add(pren)
-                    db.flush()
-                    db.add(StoricoMessaggio(
-                        id_prenotazione=pren.id, mittente="Cliente",
-                        testo=body, message_id=mid, data_ora=hdr["date"],
-                    ))
-                    db.commit()
-                    _enrich_with_ollama(db, pren, body, settings)
-                    _check_auto_reject(db, pren, settings)
+                # Always create NEW prenotazione per form submission
+                # (never merge with old bookings from same email)
+                pren = Prenotazione(
+                    tipo_richiesta=parsed["tipo"],
+                    nome=parsed.get("nome"), cognome=parsed.get("cognome"),
+                    telefono=parsed.get("telefono"), email=client_email,
+                    data_arrivo=parsed.get("data_arrivo"),
+                    data_partenza=parsed.get("data_partenza"),
+                    adulti=parsed.get("adulti"), bambini=parsed.get("bambini"),
+                    posto_per=parsed.get("posto_per"), stato="Nuova",
+                    message_id=mid, lingua_suggerita=parsed.get("lingua", "IT"),
+                )
+                db.add(pren)
+                db.flush()
+                db.add(StoricoMessaggio(
+                    id_prenotazione=pren.id, mittente="Cliente",
+                    testo=body, message_id=mid, data_ora=hdr["date"],
+                ))
+                db.commit()
+                _enrich_with_ollama(db, pren, body, settings)
+                _check_auto_reject(db, pren, settings)
 
                 form_count += 1
                 processed += 1
@@ -915,14 +892,7 @@ def import_full_history(
                             pren = _find_pren_by_message_id(db, ref_clean)
                             if pren:
                                 break
-                # By sender email (client or campsite replying to client)
-                if not pren and from_addr not in camping:
-                    pren = _known_client(db, from_addr)
-                # By recipient email (campsite sent TO client)
-                if not pren and from_addr in camping:
-                    to_addr = hdr.get("to", "")
-                    if to_addr and to_addr not in camping:
-                        pren = _known_client(db, to_addr)
+                # NO fallback by email address — prevents merging unrelated old emails
 
                 if not pren:
                     _update(processed=job_state.get("processed", 0) + 1 if job_state else 0)

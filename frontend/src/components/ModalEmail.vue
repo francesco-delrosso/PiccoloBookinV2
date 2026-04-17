@@ -88,7 +88,8 @@ const editBody = ref('')
 const sending = ref(false)
 
 // Template type: accetta_noCaparra uses 'accetta' template but different title/status
-const templateTipo = computed(() => props.tipo === 'accetta_noCaparra' ? 'accetta' : props.tipo)
+// Use the actual template tipo — accetta_noCaparra has its own template now
+const templateTipo = computed(() => props.tipo)
 
 const config = computed(() => {
   const map = {
@@ -132,6 +133,7 @@ function applyTemplate(template) {
     posto_per: p.posto_per || '',
     costo_totale: costo ? String(costo) : '',
     caparra: caparra,
+    saldo: costo ? (costo - parseFloat(caparra || '0')).toFixed(2) : '',
     caparra_percentuale: String(caparraPerc.value),
     testo_aggiuntivo: '',
   }

@@ -20,7 +20,7 @@ class Prenotazione(Base):
     posto_per = Column(String, nullable=True)
     stato = Column(String, default="Nuova")
     costo_totale = Column(Float, nullable=True)
-    data_ricezione = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    data_ricezione = Column(DateTime, default=lambda: datetime.now())
     message_id = Column(String, unique=True, nullable=True)
     lingua_suggerita = Column(String, nullable=True)
 
@@ -42,7 +42,7 @@ class StoricoMessaggio(Base):
     mittente = Column(String, nullable=False)
     testo = Column(Text, nullable=True)
     testo_tradotto = Column(Text, nullable=True)
-    data_ora = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    data_ora = Column(DateTime, default=lambda: datetime.now())
     message_id = Column(String, unique=True, nullable=True)
 
     prenotazione = relationship("Prenotazione", back_populates="messaggi")

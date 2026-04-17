@@ -132,11 +132,11 @@ def _parse_date(raw: str | None) -> datetime:
         try:
             dt = email.utils.parsedate_to_datetime(raw)
             if dt.tzinfo is not None:
-                dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
+                dt = dt.astimezone().replace(tzinfo=None)  # convert to local time
             return dt
         except Exception:
             pass
-    return datetime.now(timezone.utc).replace(tzinfo=None)
+    return datetime.now().replace(tzinfo=None)
 
 
 def _clean_message_id(raw: str | None) -> str | None:
@@ -574,7 +574,7 @@ def _check_auto_reject(db, pren: Prenotazione, settings: dict) -> bool:
             mittente="Campeggio",
             testo=corpo,
             message_id=new_mid,
-            data_ora=datetime.now(timezone.utc).replace(tzinfo=None),
+            data_ora=datetime.now().replace(tzinfo=None),
         ))
         pren.stato = "Rifiutata"
         db.commit()

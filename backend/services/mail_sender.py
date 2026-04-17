@@ -10,9 +10,9 @@ from email.utils import formatdate, make_msgid
 logger = logging.getLogger(__name__)
 
 
-def _fetch_real_message_id(settings: dict, subject: str) -> str | None:
-    """After sending via SMTP, fetch the real Message-ID from Sent folder.
-    Aruba SMTP rewrites Message-IDs, so we need the actual one."""
+def _fetch_real_message_id(settings: dict) -> str | None:
+    """After sending via SMTP, fetch the real Message-ID of the LAST
+    message in the Sent folder. Aruba rewrites Message-IDs."""
     try:
         server = settings.get("imap_server", "")
         port = int(settings.get("imap_port", "993"))
@@ -22,44 +22,36 @@ def _fetch_real_message_id(settings: dict, subject: str) -> str | None:
         conn = imaplib.IMAP4_SSL(server, port, timeout=15)
         conn.login(user, password)
 
-        # Find Sent folder
+        # Try common Sent folder names
         sent_folder = None
-        _, folders = conn.list()
-        for f in (folders or []):
-            decoded = f.decode("utf-8", errors="replace") if isinstance(f, bytes) else str(f)
-            if "sent" in decoded.lower() or "invia" in decoded.lower():
-                import re
-                m = re.search(r'"([^"]+)"\s*$', decoded) or re.search(r"(\S+)\s*$", decoded)
-                if m:
-                    name = m.group(1).strip('"')
-                    if name in ("INBOX.Sent", "Sent"):
-                        sent_folder = name
-                        break
-                    if not sent_folder:
-                        sent_folder = name
+        for name in ("INBOX.Sent", "Sent", "Posta inviata"):
+            try:
+                typ, _ = conn.select(name, readonly=True)
+                if typ == "OK":
+                    sent_folder = name
+                    break
+            except Exception:
+                continue
 
         if not sent_folder:
             conn.logout()
             return None
 
-        conn.select(sent_folder, readonly=True)
         _, data = conn.search(None, "ALL")
         uids = data[0].split() if data[0] else []
         if not uids:
             conn.logout()
             return None
 
-        # Check last 3 messages
-        for uid in reversed(uids[-3:]):
-            _, hdata = conn.fetch(uid, "(BODY.PEEK[HEADER.FIELDS (MESSAGE-ID SUBJECT)])")
-            if hdata and isinstance(hdata[0], tuple):
-                msg = email_lib.message_from_bytes(hdata[0][1])
-                msg_subj = msg.get("Subject", "")
-                msg_mid = msg.get("Message-ID", "").strip().strip("<>")
-                if subject and subject[:30] in str(msg_subj) and msg_mid:
-                    conn.logout()
-                    logger.info("Real Message-ID from Sent: %s", msg_mid)
-                    return msg_mid
+        # Get the LAST message (most recently sent)
+        _, hdata = conn.fetch(uids[-1], "(BODY.PEEK[HEADER.FIELDS (MESSAGE-ID)])")
+        if hdata and isinstance(hdata[0], tuple):
+            msg = email_lib.message_from_bytes(hdata[0][1])
+            mid = msg.get("Message-ID", "").strip().strip("<>")
+            conn.logout()
+            if mid:
+                logger.info("Real Message-ID from Sent: %s", mid)
+                return mid
 
         conn.logout()
     except Exception as ex:
@@ -120,7 +112,7 @@ def send_email(
     # Wait briefly then fetch real Message-ID from Sent folder
     # (Aruba SMTP rewrites Message-IDs)
     time.sleep(2)
-    real_mid = _fetch_real_message_id(settings, subject)
+    real_mid = _fetch_real_message_id(settings)
     if real_mid:
         return real_mid
 

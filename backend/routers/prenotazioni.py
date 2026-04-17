@@ -101,7 +101,7 @@ def add_messaggio(
         id_prenotazione=pren_id,
         mittente=data.mittente,
         testo=data.testo,
-        data_ora=datetime.now(timezone.utc),
+        data_ora=datetime.now(),
     )
     db.add(msg)
     db.commit()
@@ -150,7 +150,7 @@ def invia_messaggio(
         mittente="Campeggio",
         testo=data.testo,
         message_id=new_mid,
-        data_ora=datetime.now(timezone.utc),
+        data_ora=datetime.now(),
     )
     db.add(msg)
 

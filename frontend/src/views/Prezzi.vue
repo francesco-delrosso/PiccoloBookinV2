@@ -236,6 +236,11 @@ async function load() {
 async function save() {
   saving.value = true
   try {
+    // Clean empty periods before save
+    listino.value.stagioni.forEach(s => {
+      s.periodi = s.periodi.filter(p => (Array.isArray(p) ? p[0] : p.da))
+      if (!s.periodi.length) s.periodi.push(['', ''])
+    })
     await updatePrezzi(listino.value)
     showToast('Listino salvato')
   } catch (e) {

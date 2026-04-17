@@ -213,10 +213,10 @@ onMounted(async () => {
   if (p && (!p.costo_totale || p.costo_totale === 0) && listino) {
     const calc = autoCalcCosto(listino, p)
     if (calc && calc > 0) {
-      // Save to DB so it persists
+      // Save to DB and refresh store
       try {
         await updatePrenotazione(p.id, { costo_totale: calc })
-        p.costo_totale = calc // update local ref too
+        await store.selectPrenotazione(p.id)
       } catch { /* ignore */ }
     }
   }

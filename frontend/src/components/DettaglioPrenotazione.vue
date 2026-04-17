@@ -230,6 +230,7 @@ function resetForm() {
   for (const k of editableKeys) obj[k] = p.value[k] ?? null
   form.value = obj
   breakdown.value = []
+  costoCalcolato.value = 0
 }
 
 watch(() => p.value.id, resetForm, { immediate: true })

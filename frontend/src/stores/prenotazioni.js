@@ -48,7 +48,7 @@ export const usePrenotazioniStore = defineStore('prenotazioni', {
         try {
           const { data } = await getJobStatus()
           this.jobStatus = data
-          if (data.status === 'completed' || data.status === 'error' || data.status === 'idle') {
+          if (['completed', 'done', 'error', 'idle'].includes(data.status)) {
             this.stopJobPolling()
             this.fetchAll()
           }

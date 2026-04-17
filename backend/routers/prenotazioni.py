@@ -19,7 +19,6 @@ from schemas import (
     InviaMessaggioRequest,
 )
 from services.mail_sender import send_email
-from services.smart_parser import translate_to_italian
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -170,39 +169,3 @@ def invia_messaggio(
     return {"ok": True, "message_id": new_mid}
 
 
-# ---------------------------------------------------------------------------
-# Translate
-# ---------------------------------------------------------------------------
-@router.post("/{pren_id}/traduci")
-def traduci_conversazione(pren_id: int, db: Session = Depends(get_db)):
-    """Translate all untranslated messages via Ollama, store in testo_tradotto."""
-    p = (
-        db.query(Prenotazione)
-        .options(joinedload(Prenotazione.messaggi))
-        .filter_by(id=pren_id)
-        .first()
-    )
-    if not p:
-        raise HTTPException(status_code=404, detail="Prenotazione non trovata")
-
-    settings = _load_settings(db)
-    tradotti = 0
-
-    for msg in p.messaggi:
-        if msg.testo_tradotto:
-            continue  # already translated
-        if not msg.testo:
-            continue
-        traduzione = translate_to_italian(msg.testo, settings)
-        if traduzione:
-            msg.testo_tradotto = traduzione
-            tradotti += 1
-
-    if tradotti:
-        db.commit()
-
-    return {
-        "success": True,
-        "tradotti": tradotti,
-        "messaggi": [MessaggioOut.model_validate(m) for m in p.messaggi],
-    }

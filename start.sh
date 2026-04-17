@@ -7,14 +7,6 @@ NC='\033[0m'
 
 echo -e "${GREEN}=== CampingV2 ===${NC}"
 
-# Check Ollama
-if command -v ollama &> /dev/null; then
-    echo -e "${BLUE}Ollama found. Make sure phi3:mini is pulled: ollama pull phi3:mini${NC}"
-else
-    echo "Warning: Ollama not found. AI features will not work."
-    echo "Install from https://ollama.ai then run: ollama pull phi3:mini"
-fi
-
 # Kill existing processes on our ports
 for PORT in 8000 5173; do
     PID=$(lsof -ti:$PORT 2>/dev/null || true)

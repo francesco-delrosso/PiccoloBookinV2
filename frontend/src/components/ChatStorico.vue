@@ -3,23 +3,6 @@
     <!-- Header -->
     <div class="flex items-center justify-between px-5 py-3 border-b border-border">
       <h3 class="text-sm font-semibold text-gray-700">Messaggi</h3>
-      <div class="flex items-center gap-2">
-        <button
-          v-if="hasTranslations"
-          @click="showTranslated = !showTranslated"
-          class="px-3 py-1 text-xs font-medium rounded-lg border transition-colors"
-          :class="showTranslated ? 'bg-secondary/10 text-secondary-dark border-secondary/30' : 'border-border hover:bg-gray-50'"
-        >
-          {{ showTranslated ? 'Originale' : 'Tradotto' }}
-        </button>
-        <button
-          @click="$emit('traduci')"
-          :disabled="translating"
-          class="px-3 py-1 text-xs font-medium text-white bg-secondary rounded-lg hover:bg-secondary-dark transition-colors disabled:opacity-50"
-        >
-          {{ translating ? 'Traduzione...' : 'Traduci' }}
-        </button>
-      </div>
     </div>
 
     <!-- Messages -->
@@ -61,7 +44,7 @@
             </div>
             <div
               class="message-body text-gray-800"
-              v-html="renderText(showTranslated && msg.testo_tradotto ? msg.testo_tradotto : msg.testo)"
+              v-html="renderText(msg.testo)"
             ></div>
             <div class="text-[11px] text-gray-400 mt-2 text-right">
               {{ formatTime(msg.data_ora) }}
@@ -103,21 +86,13 @@ const store = usePrenotazioniStore()
 
 const props = defineProps({
   messaggi: { type: Array, default: () => [] },
-  translating: { type: Boolean, default: false },
   prenId: { type: Number, default: null },
 })
-
-defineEmits(['traduci'])
 
 const newMessage = ref('')
 const sending = ref(false)
 
 const chatContainer = ref(null)
-const showTranslated = ref(false)
-
-const hasTranslations = computed(() =>
-  props.messaggi?.some((m) => m.testo_tradotto)
-)
 
 async function sendMessage() {
   if (!newMessage.value.trim() || !props.prenId) return

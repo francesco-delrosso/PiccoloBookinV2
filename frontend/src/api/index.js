@@ -9,7 +9,7 @@ export const getPrenotazione = (id) => api.get(`/prenotazioni/${id}`)
 export const updatePrenotazione = (id, data) => api.patch(`/prenotazioni/${id}`, data)
 export const deletePrenotazione = (id) => api.delete(`/prenotazioni/${id}`)
 export const inviaMessaggio = (id, data) => api.post(`/prenotazioni/${id}/invia-messaggio`, data)
-export const traduciThread = (id) => api.post(`/prenotazioni/${id}/traduci`)
+
 
 // Mail
 export const pollMail = (limit = 20) => apiLong.post(`/mail/poll?limit=${limit}`)

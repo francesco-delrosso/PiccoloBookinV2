@@ -133,33 +133,6 @@
       </div>
     </div>
 
-    <!-- Ollama -->
-    <div class="bg-surface rounded-xl shadow-sm border border-border p-5">
-      <h2 class="text-sm font-bold text-primary-dark mb-4 pb-2 border-b border-border">Ollama (LLM locale)</h2>
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label class="block text-xs font-medium text-gray-500 mb-1">URL Ollama</label>
-          <input v-model="cfg.ollama_url" placeholder="http://localhost:11434"
-            class="w-full px-3 py-2 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
-        </div>
-        <div>
-          <label class="block text-xs font-medium text-gray-500 mb-1">Modello</label>
-          <input v-model="cfg.ollama_model" placeholder="phi3:mini"
-            class="w-full px-3 py-2 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
-        </div>
-        <div>
-          <label class="block text-xs font-medium text-gray-500 mb-1">Worker paralleli</label>
-          <input type="number" v-model="cfg.ollama_workers" min="1"
-            class="w-full px-3 py-2 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
-        </div>
-      </div>
-      <div class="mt-3 text-xs text-gray-500 bg-gray-50 rounded-lg p-3">
-        Modelli consigliati: <code class="bg-gray-200 px-1 rounded">phi3:mini</code> (leggero ~2.3GB) ·
-        <code class="bg-gray-200 px-1 rounded">mistral:7b-instruct-q4_K_M</code> (piu preciso ~4GB)<br>
-        Installare con: <code class="bg-gray-200 px-1 rounded">ollama pull phi3:mini</code>
-      </div>
-    </div>
-
     <!-- Modelli email -->
     <div class="bg-surface rounded-xl shadow-sm border border-border p-5">
       <h2 class="text-sm font-bold text-primary-dark mb-4 pb-2 border-b border-border">Modelli Email</h2>
@@ -211,7 +184,6 @@ const cfg = reactive({
   email_mittente: '', email_form_sito: '',
   caparra_percentuale: '30', poll_interval_minutes: '10',
   filtro_domini_scarta: '', filtro_oggetto_scarta: '',
-  ollama_url: 'http://localhost:11434', ollama_model: 'phi3:mini', ollama_workers: '4',
 })
 
 const modelli = ref([])

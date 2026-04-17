@@ -75,9 +75,7 @@
         />
         <ChatStorico
           :messaggi="store.selected.messaggi || []"
-          :translating="translating"
           :prenId="store.selected.id"
-          @traduci="traduci"
         />
       </template>
       <div v-else class="flex flex-col items-center justify-center h-full text-gray-400">
@@ -113,7 +111,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { usePrenotazioniStore } from '../stores/prenotazioni'
-import { pollMail, importFull as importFullApi, resetReimport, deletePrenotazione, traduciThread } from '../api'
+import { pollMail, importFull as importFullApi, resetReimport, deletePrenotazione } from '../api'
 import PrenotazioniList from '../components/PrenotazioniList.vue'
 import DettaglioPrenotazione from '../components/DettaglioPrenotazione.vue'
 import ChatStorico from '../components/ChatStorico.vue'
@@ -122,7 +120,6 @@ import ModalEmail from '../components/ModalEmail.vue'
 const store = usePrenotazioniStore()
 
 const polling = ref(false)
-const translating = ref(false)
 const importLimit = ref(0)
 const modal = ref(null)
 const toast = ref({ show: false, message: '', type: 'success' })
@@ -197,19 +194,6 @@ async function handleAction(action) {
   modal.value = action
 }
 
-async function traduci() {
-  if (!store.selected) return
-  translating.value = true
-  try {
-    await traduciThread(store.selected.id)
-    await store.selectPrenotazione(store.selected.id)
-    showToast('Traduzione completata')
-  } catch (e) {
-    showToast(e.response?.data?.detail || 'Errore durante la traduzione', 'error')
-  } finally {
-    translating.value = false
-  }
-}
 
 async function onModalSent() {
   modal.value = null

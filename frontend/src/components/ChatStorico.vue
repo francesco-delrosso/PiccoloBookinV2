@@ -3,53 +3,47 @@
     <!-- Header -->
     <div class="flex items-center justify-between px-5 py-3 border-b border-border">
       <h3 class="text-sm font-semibold text-gray-700">Messaggi</h3>
+      <span class="text-xs text-gray-400">{{ messaggi?.length || 0 }} messaggi</span>
     </div>
 
-    <!-- Messages -->
-    <div ref="chatContainer" class="flex-1 overflow-y-auto px-4 py-4">
+    <!-- Messages (Aruba Mail style) -->
+    <div ref="chatContainer" class="flex-1 overflow-y-auto">
       <div
         v-if="!messaggi || messaggi.length === 0"
-        class="flex items-center justify-center h-full text-gray-400 text-sm"
+        class="flex items-center justify-center h-full text-gray-400 text-sm py-12"
       >
         Nessun messaggio
       </div>
 
       <template v-for="(msg, idx) in messaggi" :key="msg.id">
-        <!-- Date separator -->
-        <div
-          v-if="idx === 0 || !sameDay(messaggi[idx - 1].data_ora, msg.data_ora)"
-          class="flex items-center gap-3 my-4"
-        >
-          <div class="flex-1 h-px bg-border"></div>
-          <span class="text-xs text-gray-400 font-medium">{{ formatDate(msg.data_ora) }}</span>
-          <div class="flex-1 h-px bg-border"></div>
-        </div>
+        <!-- Separator between messages -->
+        <div v-if="idx > 0" class="border-t border-border"></div>
 
-        <!-- Message bubble -->
+        <!-- Message card -->
         <div
-          class="flex mb-3"
-          :class="msg.mittente === 'Campeggio' ? 'justify-end' : 'justify-start'"
+          class="message-card px-5 py-4"
+          :class="msg.mittente === 'Campeggio' ? 'bg-[#f4faf6]' : 'bg-white'"
         >
-          <div
-            class="max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed shadow-sm"
-            :class="msg.mittente === 'Campeggio'
-              ? 'bg-primary/10 rounded-tr-sm'
-              : 'bg-gray-100 rounded-tl-sm'"
-          >
-            <div
-              class="text-xs font-semibold mb-1.5"
-              :class="msg.mittente === 'Campeggio' ? 'text-primary-dark' : 'text-gray-500'"
-            >
-              {{ msg.mittente }}
+          <!-- Header row: sender + date -->
+          <div class="flex items-start justify-between gap-4">
+            <div class="min-w-0">
+              <span class="font-semibold text-sm text-gray-800">
+                {{ senderDisplay(msg) }}
+              </span>
+              <div class="text-xs text-gray-400 mt-0.5">
+                A: {{ recipientDisplay(msg) }}
+              </div>
             </div>
-            <div
-              class="message-body text-gray-800"
-              v-html="renderText(msg.testo)"
-            ></div>
-            <div class="text-[11px] text-gray-400 mt-2 text-right">
-              {{ formatTime(msg.data_ora) }}
-            </div>
+            <span class="text-xs text-gray-400 whitespace-nowrap flex-shrink-0 pt-0.5">
+              {{ formatDateTime(msg.data_ora) }}
+            </span>
           </div>
+
+          <!-- Body -->
+          <div
+            class="message-body text-sm text-gray-700 leading-relaxed mt-3"
+            v-html="renderText(msg.testo)"
+          ></div>
         </div>
       </template>
     </div>
@@ -78,7 +72,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, watch, nextTick } from 'vue'
 import { inviaMessaggio } from '../api'
 import { usePrenotazioniStore } from '../stores/prenotazioni'
 
@@ -91,8 +85,26 @@ const props = defineProps({
 
 const newMessage = ref('')
 const sending = ref(false)
-
 const chatContainer = ref(null)
+
+const CAMPEGGIO_EMAIL = 'info@piccolocamping.com'
+
+function senderDisplay(msg) {
+  if (msg.mittente === 'Campeggio') return CAMPEGGIO_EMAIL
+  // Use email from parent booking if available, otherwise fallback
+  const sel = store.selected
+  if (sel && sel.email) return sel.email
+  return msg.mittente
+}
+
+function recipientDisplay(msg) {
+  if (msg.mittente === 'Campeggio') {
+    const sel = store.selected
+    if (sel && sel.email) return sel.email
+    return 'Cliente'
+  }
+  return CAMPEGGIO_EMAIL
+}
 
 async function sendMessage() {
   if (!newMessage.value.trim() || !props.prenId) return
@@ -111,7 +123,6 @@ async function sendMessage() {
 
 // URL regex for linkification
 const URL_RE = /https?:\/\/[^\s<>"')\]]+/g
-const EMAIL_RE = /\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b/g
 const IMAGE_EXT_RE = /\.(jpg|jpeg|png|gif|webp|bmp)(\?[^\s]*)?$/i
 
 function escapeHtml(text) {
@@ -148,25 +159,16 @@ function renderText(text) {
   return html
 }
 
-function sameDay(d1, d2) {
-  if (!d1 || !d2) return false
-  const a = new Date(d1)
-  const b = new Date(d2)
-  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
-}
-
-function formatDate(dateStr) {
+function formatDateTime(dateStr) {
   if (!dateStr) return ''
-  return new Date(dateStr).toLocaleDateString('it-IT', {
-    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-  })
-}
-
-function formatTime(dateStr) {
-  if (!dateStr) return ''
-  return new Date(dateStr).toLocaleTimeString('it-IT', {
-    hour: '2-digit', minute: '2-digit',
-  })
+  const d = new Date(dateStr)
+  const day = d.getDate()
+  const months = ['gen', 'feb', 'mar', 'apr', 'mag', 'giu', 'lug', 'ago', 'set', 'ott', 'nov', 'dic']
+  const month = months[d.getMonth()]
+  const year = d.getFullYear()
+  const hours = String(d.getHours()).padStart(2, '0')
+  const minutes = String(d.getMinutes()).padStart(2, '0')
+  return `${day} ${month} ${year} - ${hours}:${minutes}`
 }
 
 function scrollToBottom() {
@@ -186,11 +188,11 @@ watch(
 
 <style scoped>
 .message-body :deep(a) {
-  color: var(--color-secondary);
+  color: var(--color-secondary, #2B6B4F);
   text-decoration: underline;
 }
 .message-body :deep(a:hover) {
-  color: var(--color-secondary-dark);
+  color: var(--color-secondary-dark, #1f5039);
 }
 .message-body :deep(img) {
   border-radius: 0.5rem;

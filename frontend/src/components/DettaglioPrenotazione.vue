@@ -31,7 +31,7 @@
           <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Messaggio del cliente</span>
           <span class="text-xs text-gray-400">{{ formatDate(primoMessaggio.data_ora) }}</span>
         </div>
-        <div class="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">{{ primoMessaggio.testo }}</div>
+        <div class="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">{{ messaggioCliente }}</div>
       </div>
 
       <!-- Dati soggiorno -->
@@ -186,6 +186,15 @@ const primoMessaggio = computed(() => {
   const msgs = p.value.messaggi
   if (!msgs || !msgs.length) return null
   return msgs.find(m => m.mittente === 'Cliente') || msgs[0]
+})
+
+const messaggioCliente = computed(() => {
+  if (!primoMessaggio.value?.testo) return ''
+  const testo = primoMessaggio.value.testo
+  // Extract only text after "Messaggio:" if present (form emails)
+  const match = testo.match(/Messaggio:\s*([\s\S]*)/)
+  if (match) return match[1].trim()
+  return testo
 })
 
 function formatDate(d) {

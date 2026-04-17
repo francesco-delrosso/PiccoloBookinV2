@@ -10,15 +10,6 @@
           {{ [p.nome, p.cognome].filter(Boolean).join(' ') || p.email || 'Senza nome' }}
         </span>
       </div>
-      <!-- Key info pills -->
-      <div class="flex items-center gap-2 text-xs text-gray-500 min-w-0 overflow-hidden">
-        <span v-if="p.data_arrivo" class="pill">{{ fmtDate(p.data_arrivo) }} → {{ fmtDate(p.data_partenza) }}</span>
-        <span v-if="p.adulti" class="pill">{{ p.adulti }}ad{{ p.bambini ? ' ' + p.bambini + 'bam' : '' }}</span>
-        <span v-if="p.posto_per" class="pill capitalize">{{ p.posto_per }}</span>
-        <span v-if="p.costo_totale" class="pill font-semibold text-gray-700">&euro;{{ p.costo_totale }}</span>
-        <span v-if="p.costo_totale && caparraPerc" class="pill text-warm-dark">cap. &euro;{{ caparra }}</span>
-        <span v-if="numNotti" class="pill">{{ numNotti }}n</span>
-      </div>
       <!-- Stato badge + expand arrow -->
       <div class="ml-auto flex items-center gap-2 shrink-0">
         <span class="text-xs font-semibold px-2 py-0.5 rounded-full" :class="statoClass(p.stato)">{{ p.stato }}</span>

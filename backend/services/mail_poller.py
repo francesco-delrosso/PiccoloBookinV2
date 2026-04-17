@@ -574,19 +574,10 @@ def _check_auto_reject(db, pren: Prenotazione, settings: dict) -> bool:
     except (ValueError, TypeError):
         return False
 
-    # Auto-reject: use rifiuta_calendario template (falls back to rifiuta)
-    lingua = pren.lingua_suggerita or "IT"
-    template = (
-        db.query(ModelloMail)
-        .filter_by(lingua=lingua, tipo="rifiuta_calendario")
-        .first()
-    )
+    # Auto-reject: use trilingue rifiuta_calendario template
+    template = db.query(ModelloMail).filter_by(tipo="rifiuta_calendario").first()
     if not template:
-        template = db.query(ModelloMail).filter_by(lingua=lingua, tipo="rifiuta").first()
-    if not template:
-        template = db.query(ModelloMail).filter_by(tipo="rifiuta_calendario").first()
-    if not template:
-        logger.warning("Auto-reject: no template found for %s", pren.email)
+        logger.warning("Auto-reject: no rifiuta_calendario template found")
         return False
 
     # Build email

@@ -554,20 +554,36 @@ def _check_auto_reject(db, pren: Prenotazione, settings: dict) -> bool:
 
         if not has_overlap:
             return False
+
+        # Find next available date after the requested period
+        disponibile_da = ""
+        check = arr
+        max_check = arr + timedelta(days=365)
+        while check < max_check:
+            if check.isoformat() not in closed_dates:
+                # Found an open date — verify at least 2 consecutive open days
+                next_day = check + timedelta(days=1)
+                if next_day.isoformat() not in closed_dates:
+                    disponibile_da = check.isoformat()
+                    break
+            check += timedelta(days=1)
+
     except (ValueError, TypeError):
         return False
 
-    # Auto-reject: find rifiuta template for the booking's language
+    # Auto-reject: use rifiuta_calendario template (falls back to rifiuta)
     lingua = pren.lingua_suggerita or "IT"
     template = (
         db.query(ModelloMail)
-        .filter_by(lingua=lingua, tipo="rifiuta")
+        .filter_by(lingua=lingua, tipo="rifiuta_calendario")
         .first()
     )
     if not template:
-        template = db.query(ModelloMail).filter_by(tipo="rifiuta").first()
+        template = db.query(ModelloMail).filter_by(lingua=lingua, tipo="rifiuta").first()
     if not template:
-        logger.warning("Auto-reject: no rifiuta template found for %s", pren.email)
+        template = db.query(ModelloMail).filter_by(tipo="rifiuta_calendario").first()
+    if not template:
+        logger.warning("Auto-reject: no template found for %s", pren.email)
         return False
 
     # Build email
@@ -581,7 +597,9 @@ def _check_auto_reject(db, pren: Prenotazione, settings: dict) -> bool:
         "posto_per": pren.posto_per or "",
         "costo_totale": "",
         "caparra": "",
+        "saldo": "",
         "caparra_percentuale": settings.get("caparra_percentuale", "30"),
+        "disponibile_da": disponibile_da,
         "testo_aggiuntivo": "",
     }
 

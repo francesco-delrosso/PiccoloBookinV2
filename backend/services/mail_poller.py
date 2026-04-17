@@ -681,10 +681,8 @@ def poll_emails(db, limit: int = 20) -> dict:
                             pren = _find_pren_by_message_id(db, ref_clean)
                             if pren:
                                 break
-                # Fallback: if email IS a reply (has In-Reply-To) but ID didn't match
-                # (SMTP server rewrote Message-ID), try matching by client email
-                if not pren and has_reply_header:
-                    pren = _known_client(db, from_addr)
+                # No email fallback needed — Message-IDs are now correct
+                # (fetched from Sent folder after SMTP send)
 
                 if pren:
                     body = _fetch_body(conn, hdr["uid"], hdr["folder"])
@@ -845,15 +843,6 @@ def import_full_history(
                             pren = _find_pren_by_message_id(db, ref_clean)
                             if pren:
                                 break
-                # Fallback: if email IS a reply but SMTP rewrote Message-ID
-                has_reply = bool(hdr["in_reply_to"] or hdr["references"])
-                if not pren and has_reply and from_addr not in camping:
-                    pren = _known_client(db, from_addr)
-                if not pren and has_reply and from_addr in camping:
-                    to_addr = hdr.get("to", "")
-                    if to_addr and to_addr not in camping:
-                        pren = _known_client(db, to_addr)
-
                 if not pren:
                     _update(processed=job_state.get("processed", 0) + 1 if job_state else 0)
                     continue

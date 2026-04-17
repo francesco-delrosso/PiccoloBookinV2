@@ -1,10 +1,7 @@
 <template>
   <div class="prezzi-page">
     <div class="page-header">
-      <div style="display:flex;align-items:center;gap:0.75rem">
-        <router-link to="/" style="color:#9ca3af;text-decoration:none;font-size:1.1rem">&larr;</router-link>
-        <h2>Listino Prezzi</h2>
-      </div>
+      <h2>Listino Prezzi</h2>
       <div class="header-actions">
         <button class="btn-add-stagione" @click="addStagione">+ Stagione</button>
         <button class="btn-save" @click="save" :disabled="saving">

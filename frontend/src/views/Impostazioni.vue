@@ -1,10 +1,7 @@
 <template>
   <div class="max-w-4xl mx-auto p-6 space-y-6">
     <div class="flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <router-link to="/" class="text-gray-400 hover:text-primary transition-colors text-lg">&larr;</router-link>
-        <h1 class="text-xl font-bold text-gray-800">Impostazioni</h1>
-      </div>
+      <h1 class="text-xl font-bold text-gray-800">Impostazioni</h1>
       <button
         class="px-6 py-2.5 text-sm font-medium rounded-lg bg-primary text-white hover:bg-primary-dark transition-colors disabled:opacity-50"
         :disabled="saving"

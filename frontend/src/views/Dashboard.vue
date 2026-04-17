@@ -15,11 +15,21 @@
 
     <!-- List sidebar (only visible on mail panel) -->
     <div v-if="activePanel === 'mail'" class="w-[300px] shrink-0 bg-surface border-r border-border flex flex-col">
-      <!-- Poll button only -->
+      <!-- Import toolbar -->
       <div class="px-3 py-2 border-b border-border flex items-center gap-2">
-        <button class="flex-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-primary text-white hover:bg-primary-dark disabled:opacity-50"
+        <button class="px-3 py-1.5 text-xs font-medium rounded-lg bg-primary text-white hover:bg-primary-dark disabled:opacity-50"
           :disabled="polling" @click="handlePoll">
-          {{ polling ? 'Controllo...' : 'Controlla nuove email' }}
+          {{ polling ? '...' : 'Poll' }}
+        </button>
+        <input v-model.number="importLimit" type="number" min="0" placeholder="0" title="0 = tutte"
+          class="w-14 px-2 py-1.5 text-xs rounded-lg border border-border bg-white" />
+        <button class="px-3 py-1.5 text-xs font-medium rounded-lg bg-secondary text-white hover:bg-secondary-dark"
+          @click="handleImport">Import</button>
+        <button class="ml-auto px-2 py-1.5 text-xs rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50"
+          title="Reset e reimport" @click="handleReset">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
         </button>
       </div>
 

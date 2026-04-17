@@ -62,8 +62,6 @@
               class="tb-btn bg-white text-green-700 border border-green-300 hover:bg-green-50">Senza caparra</button>
             <button @click="handleAction('rifiuta')"
               class="tb-btn bg-red-600 hover:bg-red-700 text-white">Rifiuta</button>
-            <button @click="handleAction('info')"
-              class="tb-btn bg-secondary hover:bg-secondary-dark text-white">Info</button>
             <button v-if="store.selected.stato === 'Attesa Bonifico'" @click="confirmBonifico"
               class="tb-btn bg-warm hover:bg-warm-dark text-white">Bonifico ricevuto</button>
             <button @click="handleAction('elimina')"

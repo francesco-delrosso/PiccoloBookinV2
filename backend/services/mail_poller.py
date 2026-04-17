@@ -555,18 +555,21 @@ def _check_auto_reject(db, pren: Prenotazione, settings: dict) -> bool:
         if not has_overlap:
             return False
 
-        # Find next available date after the requested period
-        disponibile_da = ""
-        check = arr
-        max_check = arr + timedelta(days=365)
-        while check < max_check:
-            if check.isoformat() not in closed_dates:
-                # Found an open date — verify at least 2 consecutive open days
-                next_day = check + timedelta(days=1)
-                if next_day.isoformat() not in closed_dates:
-                    disponibile_da = check.isoformat()
-                    break
-            check += timedelta(days=1)
+        # Next available date: use manual setting if present, else calculate
+        disp_row = db.query(Impostazione).filter_by(chiave="disponibile_da").first()
+        disponibile_da = (disp_row.valore or "").strip() if disp_row else ""
+
+        if not disponibile_da:
+            # Auto-calculate: first date with 2+ consecutive open days
+            check = arr
+            max_check = arr + timedelta(days=365)
+            while check < max_check:
+                if check.isoformat() not in closed_dates:
+                    next_day = check + timedelta(days=1)
+                    if next_day.isoformat() not in closed_dates:
+                        disponibile_da = check.isoformat()
+                        break
+                check += timedelta(days=1)
 
     except (ValueError, TypeError):
         return False

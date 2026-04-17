@@ -50,8 +50,20 @@
       </div>
     </div>
 
+    <!-- Prossima disponibilita -->
+    <div class="mt-6 bg-surface rounded-xl shadow-sm border border-border p-5">
+      <h3 class="text-sm font-bold text-gray-700 mb-3">Prossima disponibilita</h3>
+      <p class="text-xs text-gray-500 mb-3">Questa data viene usata nelle email di rifiuto automatico. Se vuota, viene calcolata dal calendario.</p>
+      <div class="flex items-center gap-3">
+        <input type="date" v-model="disponibileDa"
+          class="px-3 py-2 rounded-lg border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
+        <button v-if="disponibileDa" @click="disponibileDa = ''"
+          class="text-xs text-gray-400 hover:text-red-500">Svuota (usa calcolo automatico)</button>
+      </div>
+    </div>
+
     <!-- Closed ranges summary -->
-    <div v-if="closedRanges.length" class="mt-6 bg-surface rounded-xl shadow-sm border border-border p-5">
+    <div v-if="closedRanges.length" class="mt-4 bg-surface rounded-xl shadow-sm border border-border p-5">
       <h3 class="text-sm font-bold text-gray-700 mb-3">Periodi chiusi ({{ closedDates.size }} giorni)</h3>
       <div class="flex flex-wrap gap-2">
         <div v-for="(range, ri) in closedRanges" :key="ri"
@@ -69,6 +81,7 @@ import { ref, computed, onMounted } from 'vue'
 import { getImpostazioni, updateImpostazione } from '../api'
 
 const closedDates = ref(new Set())
+const disponibileDa = ref('')
 const saving = ref(false)
 const toast = ref({ show: false, message: '', type: 'success' })
 let toastTimer = null
@@ -188,6 +201,10 @@ onMounted(async () => {
       const dates = JSON.parse(row.valore)
       closedDates.value = new Set(dates)
     }
+    const dispRow = data.find(s => s.chiave === 'disponibile_da')
+    if (dispRow && dispRow.valore) {
+      disponibileDa.value = dispRow.valore
+    }
   } catch { /* ignore */ }
 })
 
@@ -196,6 +213,7 @@ async function save() {
   try {
     const sorted = [...closedDates.value].sort()
     await updateImpostazione({ chiave: 'date_chiuse', valore: JSON.stringify(sorted) })
+    await updateImpostazione({ chiave: 'disponibile_da', valore: disponibileDa.value || '' })
     showToast('Calendario salvato')
   } catch (e) {
     showToast('Errore salvataggio', 'error')

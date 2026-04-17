@@ -1,7 +1,20 @@
 <template>
-  <div class="flex h-[calc(100vh-56px)]">
+  <div class="flex h-screen">
     <!-- Left sidebar -->
     <div class="w-[340px] shrink-0 bg-surface border-r border-border flex flex-col">
+      <!-- Header + nav -->
+      <div class="px-4 py-3 border-b border-border bg-primary">
+        <div class="flex items-center justify-between">
+          <span class="text-white font-bold text-sm">Piccolo Camping</span>
+          <div class="flex gap-1">
+            <router-link v-for="link in navLinks" :key="link.to" :to="link.to"
+              class="px-2 py-1 rounded text-[11px] font-medium text-white/70 hover:text-white hover:bg-white/15 transition-colors"
+              :class="$route.path === link.to ? 'bg-white/20 text-white' : ''">
+              {{ link.label }}
+            </router-link>
+          </div>
+        </div>
+      </div>
       <!-- Import toolbar (compact) -->
       <div class="px-3 py-2 border-b border-border flex items-center gap-2">
         <button class="px-3 py-1.5 text-xs font-medium rounded-lg bg-primary text-white hover:bg-primary-dark disabled:opacity-50"
@@ -102,6 +115,13 @@ import ChatStorico from '../components/ChatStorico.vue'
 import ModalEmail from '../components/ModalEmail.vue'
 
 const store = usePrenotazioniStore()
+
+const navLinks = [
+  { to: '/', label: 'Mail' },
+  { to: '/calendario', label: 'Calendario' },
+  { to: '/prezzi', label: 'Listino' },
+  { to: '/impostazioni', label: 'Impostazioni' },
+]
 
 const polling = ref(false)
 const importLimit = ref(0)

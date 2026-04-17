@@ -21,28 +21,18 @@
       </div>
     </div>
 
-    <!-- Filters + date -->
+    <!-- Filters -->
     <div class="px-3 pb-2 flex items-center gap-2">
-      <div class="flex gap-1 flex-1 min-w-0">
-        <button
-          v-for="f in filterOptions"
-          :key="f.key"
-          @click="activeFilter = f.key"
-          class="px-2 py-1 rounded text-[11px] font-medium transition-colors truncate"
-          :class="activeFilter === f.key
-            ? 'bg-primary text-white'
-            : 'bg-gray-100 text-gray-500 hover:bg-gray-200'"
-        >
-          {{ f.label }}
-          <span v-if="filterCounts[f.key] > 0" class="ml-0.5 opacity-70">{{ filterCounts[f.key] }}</span>
-        </button>
-      </div>
-      <input
-        v-model="dateFilter"
-        type="month"
-        class="w-28 px-1.5 py-1 rounded border border-border bg-white text-[11px] text-gray-500 shrink-0
-               focus:outline-none focus:ring-1 focus:ring-primary/30"
-      />
+      <select v-model="activeFilter"
+        class="flex-1 px-2.5 py-1.5 rounded-lg border border-border bg-white text-sm text-gray-700
+               focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary">
+        <option v-for="f in filterOptions" :key="f.key" :value="f.key">
+          {{ f.label }} ({{ filterCounts[f.key] }})
+        </option>
+      </select>
+      <input v-model="dateFilter" type="month"
+        class="w-32 px-2.5 py-1.5 rounded-lg border border-border bg-white text-sm text-gray-500
+               focus:outline-none focus:ring-2 focus:ring-primary/30" />
     </div>
 
     <!-- Separator -->

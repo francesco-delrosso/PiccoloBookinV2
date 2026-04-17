@@ -1,7 +1,10 @@
 <template>
   <div class="max-w-5xl mx-auto p-6">
     <div class="flex items-center justify-between mb-6">
-      <h1 class="text-xl font-bold text-gray-800">Calendario Disponibilita</h1>
+      <div class="flex items-center gap-3">
+        <router-link to="/" class="text-gray-400 hover:text-primary transition-colors">&larr;</router-link>
+        <h1 class="text-xl font-bold text-gray-800">Calendario Disponibilita</h1>
+      </div>
       <div class="flex gap-2">
         <button @click="save" :disabled="saving"
           class="px-5 py-2 text-sm font-medium rounded-lg bg-primary text-white hover:bg-primary-dark transition-colors disabled:opacity-50">

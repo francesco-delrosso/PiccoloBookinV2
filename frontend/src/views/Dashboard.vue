@@ -65,7 +65,7 @@
             <button v-if="store.selected.stato === 'Attesa Bonifico'" @click="confirmBonifico"
               class="tb-btn bg-warm hover:bg-warm-dark text-white">Bonifico ricevuto</button>
             <button @click="handleAction('elimina')"
-              class="tb-btn ml-auto bg-white text-gray-400 border border-gray-200 hover:text-red-600 hover:border-red-200">Elimina</button>
+              class="tb-btn ml-auto bg-red-100 text-red-700 hover:bg-red-600 hover:text-white">Elimina</button>
           </div>
           <DettaglioPrenotazione :prenotazione="store.selected" @saved="onSaved" />
           <ChatStorico class="flex-1 min-h-0" :messaggi="store.selected.messaggi || []" :prenId="store.selected.id" />

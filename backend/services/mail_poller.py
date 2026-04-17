@@ -681,8 +681,10 @@ def poll_emails(db, limit: int = 20) -> dict:
                             pren = _find_pren_by_message_id(db, ref_clean)
                             if pren:
                                 break
-                # No email fallback needed — Message-IDs are now correct
-                # (fetched from Sent folder after SMTP send)
+                # Fallback: if email IS a reply (has In-Reply-To) but Message-ID
+                # didn't match (e.g. sent before the Aruba ID fix), try by email
+                if not pren and has_reply_header:
+                    pren = _known_client(db, from_addr)
 
                 if pren:
                     body = _fetch_body(conn, hdr["uid"], hdr["folder"])

@@ -27,7 +27,8 @@
           <svg class="section-arrow" :class="collapsed.risposte ? '' : 'rotate-180'" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
         </div>
         <template v-if="!collapsed.risposte">
-          <div v-for="p in sections.risposte" :key="p.id" @click="$emit('select', p.id)" class="flex items-start gap-3 px-3 py-2.5 cursor-pointer border-l-[3px] border-b border-b-border/50 transition-all" :class="store.selected?.id === p.id ? 'border-l-secondary bg-secondary/5' : 'border-l-transparent hover:bg-gray-50'"><div class="flex-1 min-w-0"><div class="flex items-baseline justify-between gap-2"><span class="text-sm truncate" :class="isUnread(p.stato) ? 'font-bold text-gray-900' : 'font-medium text-gray-700'">{{ prenName(p) }}</span><span class="flex-shrink-0 text-[11px] text-gray-400 tabular-nums">{{ fmtDate(p.data_ricezione) }}</span></div><p class="mt-0.5 text-xs text-gray-400 truncate">{{ preview(p) }}</p></div></div>
+          <div v-for="p in sections.risposte" :key="p.id" @click="$emit('select', p.id)" class="list-item" :class="store.selected?.id === p.id ? 'border-l-secondary bg-secondary/5' : 'border-l-transparent hover:bg-gray-50'"><div class="flex-1 min-w-0"><div class="flex items-baseline justify-between gap-2"><span class="text-sm truncate" :class="isUnread(p.stato) ? 'font-bold text-gray-900' : 'font-medium text-gray-700'">{{ prenName(p) }}</span><span class="flex-shrink-0 text-[11px] text-gray-400 tabular-nums">{{ fmtDate(p.data_ricezione) }}</span></div><p class="mt-0.5 text-xs text-gray-400 truncate">{{ preview(p) }}</p></div></div>
+          <button v-if="hiddenCount('risposte') > 0" @click="showAll.risposte = true" class="show-more">Mostra altre {{ hiddenCount('risposte') }} piu vecchie</button>
         </template>
       </template>
 
@@ -39,7 +40,8 @@
           <svg class="section-arrow" :class="collapsed.daGestire ? '' : 'rotate-180'" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
         </div>
         <template v-if="!collapsed.daGestire">
-          <div v-for="p in sections.daGestire" :key="p.id" @click="$emit('select', p.id)" class="flex items-start gap-3 px-3 py-2.5 cursor-pointer border-l-[3px] border-b border-b-border/50 transition-all" :class="store.selected?.id === p.id ? 'border-l-secondary bg-secondary/5' : 'border-l-transparent hover:bg-gray-50'"><div class="flex-1 min-w-0"><div class="flex items-baseline justify-between gap-2"><span class="text-sm truncate" :class="isUnread(p.stato) ? 'font-bold text-gray-900' : 'font-medium text-gray-700'">{{ prenName(p) }}</span><span class="flex-shrink-0 text-[11px] text-gray-400 tabular-nums">{{ fmtDate(p.data_ricezione) }}</span></div><p class="mt-0.5 text-xs text-gray-400 truncate">{{ preview(p) }}</p></div></div>
+          <div v-for="p in sections.daGestire" :key="p.id" @click="$emit('select', p.id)" class="list-item" :class="store.selected?.id === p.id ? 'border-l-secondary bg-secondary/5' : 'border-l-transparent hover:bg-gray-50'"><div class="flex-1 min-w-0"><div class="flex items-baseline justify-between gap-2"><span class="text-sm truncate" :class="isUnread(p.stato) ? 'font-bold text-gray-900' : 'font-medium text-gray-700'">{{ prenName(p) }}</span><span class="flex-shrink-0 text-[11px] text-gray-400 tabular-nums">{{ fmtDate(p.data_ricezione) }}</span></div><p class="mt-0.5 text-xs text-gray-400 truncate">{{ preview(p) }}</p></div></div>
+          <button v-if="hiddenCount('daGestire') > 0" @click="showAll.daGestire = true" class="show-more">Mostra altre {{ hiddenCount('daGestire') }} piu vecchie</button>
         </template>
       </template>
 
@@ -51,31 +53,34 @@
           <svg class="section-arrow" :class="collapsed.attesa ? '' : 'rotate-180'" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
         </div>
         <template v-if="!collapsed.attesa">
-          <div v-for="p in sections.attesa" :key="p.id" @click="$emit('select', p.id)" class="flex items-start gap-3 px-3 py-2.5 cursor-pointer border-l-[3px] border-b border-b-border/50 transition-all" :class="store.selected?.id === p.id ? 'border-l-secondary bg-secondary/5' : 'border-l-transparent hover:bg-gray-50'"><div class="flex-1 min-w-0"><div class="flex items-baseline justify-between gap-2"><span class="text-sm truncate" :class="isUnread(p.stato) ? 'font-bold text-gray-900' : 'font-medium text-gray-700'">{{ prenName(p) }}</span><span class="flex-shrink-0 text-[11px] text-gray-400 tabular-nums">{{ fmtDate(p.data_ricezione) }}</span></div><p class="mt-0.5 text-xs text-gray-400 truncate">{{ preview(p) }}</p></div></div>
+          <div v-for="p in sections.attesa" :key="p.id" @click="$emit('select', p.id)" class="list-item" :class="store.selected?.id === p.id ? 'border-l-secondary bg-secondary/5' : 'border-l-transparent hover:bg-gray-50'"><div class="flex-1 min-w-0"><div class="flex items-baseline justify-between gap-2"><span class="text-sm truncate" :class="isUnread(p.stato) ? 'font-bold text-gray-900' : 'font-medium text-gray-700'">{{ prenName(p) }}</span><span class="flex-shrink-0 text-[11px] text-gray-400 tabular-nums">{{ fmtDate(p.data_ricezione) }}</span></div><p class="mt-0.5 text-xs text-gray-400 truncate">{{ preview(p) }}</p></div></div>
+          <button v-if="hiddenCount('attesa') > 0" @click="showAll.attesa = true" class="show-more">Mostra altre {{ hiddenCount('attesa') }}</button>
         </template>
       </template>
 
       <!-- CONFERMATE -->
-      <template v-if="sections.confermate.length">
+      <template v-if="sectionsAll.confermate.length">
         <div class="section-header bg-green-50/80 text-green-700" @click="collapsed.confermate = !collapsed.confermate">
           <span>Confermate</span>
-          <span class="section-count bg-green-500 text-white">{{ sections.confermate.length }}</span>
+          <span class="section-count bg-green-500 text-white">{{ sectionsAll.confermate.length }}</span>
           <svg class="section-arrow" :class="collapsed.confermate ? '' : 'rotate-180'" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
         </div>
         <template v-if="!collapsed.confermate">
-          <div v-for="p in sections.confermate" :key="p.id" @click="$emit('select', p.id)" class="flex items-start gap-3 px-3 py-2.5 cursor-pointer border-l-[3px] border-b border-b-border/50 transition-all" :class="store.selected?.id === p.id ? 'border-l-secondary bg-secondary/5' : 'border-l-transparent hover:bg-gray-50'"><div class="flex-1 min-w-0"><div class="flex items-baseline justify-between gap-2"><span class="text-sm truncate" :class="isUnread(p.stato) ? 'font-bold text-gray-900' : 'font-medium text-gray-700'">{{ prenName(p) }}</span><span class="flex-shrink-0 text-[11px] text-gray-400 tabular-nums">{{ fmtDate(p.data_ricezione) }}</span></div><p class="mt-0.5 text-xs text-gray-400 truncate">{{ preview(p) }}</p></div></div>
+          <div v-for="p in sections.confermate" :key="p.id" @click="$emit('select', p.id)" class="list-item" :class="store.selected?.id === p.id ? 'border-l-secondary bg-secondary/5' : 'border-l-transparent hover:bg-gray-50'"><div class="flex-1 min-w-0"><div class="flex items-baseline justify-between gap-2"><span class="text-sm truncate" :class="isUnread(p.stato) ? 'font-bold text-gray-900' : 'font-medium text-gray-700'">{{ prenName(p) }}</span><span class="flex-shrink-0 text-[11px] text-gray-400 tabular-nums">{{ fmtDate(p.data_ricezione) }}</span></div><p class="mt-0.5 text-xs text-gray-400 truncate">{{ preview(p) }}</p></div></div>
+          <button v-if="hiddenCount('confermate') > 0" @click="showAll.confermate = true" class="show-more">Mostra altre {{ hiddenCount('confermate') }}</button>
         </template>
       </template>
 
       <!-- RIFIUTATE -->
-      <template v-if="sections.rifiutate.length">
+      <template v-if="sectionsAll.rifiutate.length">
         <div class="section-header bg-red-50/80 text-red-700" @click="collapsed.rifiutate = !collapsed.rifiutate">
           <span>Rifiutate</span>
-          <span class="section-count bg-red-500 text-white">{{ sections.rifiutate.length }}</span>
+          <span class="section-count bg-red-500 text-white">{{ sectionsAll.rifiutate.length }}</span>
           <svg class="section-arrow" :class="collapsed.rifiutate ? '' : 'rotate-180'" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
         </div>
         <template v-if="!collapsed.rifiutate">
-          <div v-for="p in sections.rifiutate" :key="p.id" @click="$emit('select', p.id)" class="flex items-start gap-3 px-3 py-2.5 cursor-pointer border-l-[3px] border-b border-b-border/50 transition-all" :class="store.selected?.id === p.id ? 'border-l-secondary bg-secondary/5' : 'border-l-transparent hover:bg-gray-50'"><div class="flex-1 min-w-0"><div class="flex items-baseline justify-between gap-2"><span class="text-sm truncate" :class="isUnread(p.stato) ? 'font-bold text-gray-900' : 'font-medium text-gray-700'">{{ prenName(p) }}</span><span class="flex-shrink-0 text-[11px] text-gray-400 tabular-nums">{{ fmtDate(p.data_ricezione) }}</span></div><p class="mt-0.5 text-xs text-gray-400 truncate">{{ preview(p) }}</p></div></div>
+          <div v-for="p in sections.rifiutate" :key="p.id" @click="$emit('select', p.id)" class="list-item" :class="store.selected?.id === p.id ? 'border-l-secondary bg-secondary/5' : 'border-l-transparent hover:bg-gray-50'"><div class="flex-1 min-w-0"><div class="flex items-baseline justify-between gap-2"><span class="text-sm truncate" :class="isUnread(p.stato) ? 'font-bold text-gray-900' : 'font-medium text-gray-700'">{{ prenName(p) }}</span><span class="flex-shrink-0 text-[11px] text-gray-400 tabular-nums">{{ fmtDate(p.data_ricezione) }}</span></div><p class="mt-0.5 text-xs text-gray-400 truncate">{{ preview(p) }}</p></div></div>
+          <button v-if="hiddenCount('rifiutate') > 0" @click="showAll.rifiutate = true" class="show-more">Mostra altre {{ hiddenCount('rifiutate') }}</button>
         </template>
       </template>
     </div>
@@ -112,6 +117,15 @@ const collapsed = reactive({
   confermate: true,
   rifiutate: true,
 })
+const showAll = reactive({
+  risposte: false,
+  daGestire: false,
+  attesa: false,
+  confermate: false,
+  rifiutate: false,
+})
+
+const TWO_WEEKS = 14 * 24 * 60 * 60 * 1000
 
 // Search filter
 const allFiltered = computed(() => {
@@ -131,8 +145,18 @@ const allFiltered = computed(() => {
   })
 })
 
+const cutoff = new Date(Date.now() - TWO_WEEKS)
+
+function recentOnly(items, sectionKey) {
+  if (showAll[sectionKey] || searchQuery.value) return items
+  return items.filter(p => {
+    if (!p.data_ricezione) return true
+    return new Date(p.data_ricezione) >= cutoff
+  })
+}
+
 // Split into sections
-const sections = computed(() => {
+const sectionsAll = computed(() => {
   const list = allFiltered.value
   return {
     risposte: list.filter(p => p.stato === 'Nuova Risposta'),
@@ -142,6 +166,18 @@ const sections = computed(() => {
     rifiutate: list.filter(p => p.stato === 'Rifiutata'),
   }
 })
+
+const sections = computed(() => ({
+  risposte: recentOnly(sectionsAll.value.risposte, 'risposte'),
+  daGestire: recentOnly(sectionsAll.value.daGestire, 'daGestire'),
+  attesa: recentOnly(sectionsAll.value.attesa, 'attesa'),
+  confermate: recentOnly(sectionsAll.value.confermate, 'confermate'),
+  rifiutate: recentOnly(sectionsAll.value.rifiutate, 'rifiutate'),
+}))
+
+function hiddenCount(sectionKey) {
+  return sectionsAll.value[sectionKey].length - sections.value[sectionKey].length
+}
 
 // Helpers for list items
 function fmtDate(d) {
@@ -229,6 +265,32 @@ function exportCSV() {
   background: white;
   border: 1px solid var(--color-border);
   transition: all 0.15s;
+}
+.list-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  cursor: pointer;
+  border-left: 3px solid;
+  border-bottom: 1px solid rgba(226, 222, 214, 0.5);
+  transition: all 0.15s;
+}
+.show-more {
+  display: block;
+  width: 100%;
+  padding: 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--color-secondary);
+  background: var(--color-bg);
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  cursor: pointer;
+  text-align: center;
+}
+.show-more:hover {
+  background: rgba(74, 124, 155, 0.08);
 }
 .footer-btn:hover {
   color: #374151;

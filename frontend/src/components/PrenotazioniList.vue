@@ -27,7 +27,7 @@
           <svg class="section-arrow" :class="collapsed.risposte ? '' : 'rotate-180'" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
         </div>
         <template v-if="!collapsed.risposte">
-          <ListItem v-for="p in sections.risposte" :key="p.id" :pren="p" :selected="store.selected?.id === p.id" @click="$emit('select', p.id)" />
+          <div v-for="p in sections.risposte" :key="p.id" @click="$emit('select', p.id)" class="flex items-start gap-3 px-3 py-2.5 cursor-pointer border-l-[3px] border-b border-b-border/50 transition-all" :class="store.selected?.id === p.id ? 'border-l-secondary bg-secondary/5' : 'border-l-transparent hover:bg-gray-50'"><div class="flex-1 min-w-0"><div class="flex items-baseline justify-between gap-2"><span class="text-sm truncate" :class="isUnread(p.stato) ? 'font-bold text-gray-900' : 'font-medium text-gray-700'">{{ prenName(p) }}</span><span class="flex-shrink-0 text-[11px] text-gray-400 tabular-nums">{{ fmtDate(p.data_ricezione) }}</span></div><p class="mt-0.5 text-xs text-gray-400 truncate">{{ preview(p) }}</p></div></div>
         </template>
       </template>
 
@@ -39,7 +39,7 @@
           <svg class="section-arrow" :class="collapsed.daGestire ? '' : 'rotate-180'" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
         </div>
         <template v-if="!collapsed.daGestire">
-          <ListItem v-for="p in sections.daGestire" :key="p.id" :pren="p" :selected="store.selected?.id === p.id" @click="$emit('select', p.id)" />
+          <div v-for="p in sections.daGestire" :key="p.id" @click="$emit('select', p.id)" class="flex items-start gap-3 px-3 py-2.5 cursor-pointer border-l-[3px] border-b border-b-border/50 transition-all" :class="store.selected?.id === p.id ? 'border-l-secondary bg-secondary/5' : 'border-l-transparent hover:bg-gray-50'"><div class="flex-1 min-w-0"><div class="flex items-baseline justify-between gap-2"><span class="text-sm truncate" :class="isUnread(p.stato) ? 'font-bold text-gray-900' : 'font-medium text-gray-700'">{{ prenName(p) }}</span><span class="flex-shrink-0 text-[11px] text-gray-400 tabular-nums">{{ fmtDate(p.data_ricezione) }}</span></div><p class="mt-0.5 text-xs text-gray-400 truncate">{{ preview(p) }}</p></div></div>
         </template>
       </template>
 
@@ -51,7 +51,7 @@
           <svg class="section-arrow" :class="collapsed.attesa ? '' : 'rotate-180'" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
         </div>
         <template v-if="!collapsed.attesa">
-          <ListItem v-for="p in sections.attesa" :key="p.id" :pren="p" :selected="store.selected?.id === p.id" @click="$emit('select', p.id)" />
+          <div v-for="p in sections.attesa" :key="p.id" @click="$emit('select', p.id)" class="flex items-start gap-3 px-3 py-2.5 cursor-pointer border-l-[3px] border-b border-b-border/50 transition-all" :class="store.selected?.id === p.id ? 'border-l-secondary bg-secondary/5' : 'border-l-transparent hover:bg-gray-50'"><div class="flex-1 min-w-0"><div class="flex items-baseline justify-between gap-2"><span class="text-sm truncate" :class="isUnread(p.stato) ? 'font-bold text-gray-900' : 'font-medium text-gray-700'">{{ prenName(p) }}</span><span class="flex-shrink-0 text-[11px] text-gray-400 tabular-nums">{{ fmtDate(p.data_ricezione) }}</span></div><p class="mt-0.5 text-xs text-gray-400 truncate">{{ preview(p) }}</p></div></div>
         </template>
       </template>
 
@@ -63,7 +63,7 @@
           <svg class="section-arrow" :class="collapsed.confermate ? '' : 'rotate-180'" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
         </div>
         <template v-if="!collapsed.confermate">
-          <ListItem v-for="p in sections.confermate" :key="p.id" :pren="p" :selected="store.selected?.id === p.id" @click="$emit('select', p.id)" />
+          <div v-for="p in sections.confermate" :key="p.id" @click="$emit('select', p.id)" class="flex items-start gap-3 px-3 py-2.5 cursor-pointer border-l-[3px] border-b border-b-border/50 transition-all" :class="store.selected?.id === p.id ? 'border-l-secondary bg-secondary/5' : 'border-l-transparent hover:bg-gray-50'"><div class="flex-1 min-w-0"><div class="flex items-baseline justify-between gap-2"><span class="text-sm truncate" :class="isUnread(p.stato) ? 'font-bold text-gray-900' : 'font-medium text-gray-700'">{{ prenName(p) }}</span><span class="flex-shrink-0 text-[11px] text-gray-400 tabular-nums">{{ fmtDate(p.data_ricezione) }}</span></div><p class="mt-0.5 text-xs text-gray-400 truncate">{{ preview(p) }}</p></div></div>
         </template>
       </template>
 
@@ -75,7 +75,7 @@
           <svg class="section-arrow" :class="collapsed.rifiutate ? '' : 'rotate-180'" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
         </div>
         <template v-if="!collapsed.rifiutate">
-          <ListItem v-for="p in sections.rifiutate" :key="p.id" :pren="p" :selected="store.selected?.id === p.id" @click="$emit('select', p.id)" />
+          <div v-for="p in sections.rifiutate" :key="p.id" @click="$emit('select', p.id)" class="flex items-start gap-3 px-3 py-2.5 cursor-pointer border-l-[3px] border-b border-b-border/50 transition-all" :class="store.selected?.id === p.id ? 'border-l-secondary bg-secondary/5' : 'border-l-transparent hover:bg-gray-50'"><div class="flex-1 min-w-0"><div class="flex items-baseline justify-between gap-2"><span class="text-sm truncate" :class="isUnread(p.stato) ? 'font-bold text-gray-900' : 'font-medium text-gray-700'">{{ prenName(p) }}</span><span class="flex-shrink-0 text-[11px] text-gray-400 tabular-nums">{{ fmtDate(p.data_ricezione) }}</span></div><p class="mt-0.5 text-xs text-gray-400 truncate">{{ preview(p) }}</p></div></div>
         </template>
       </template>
     </div>
@@ -143,44 +143,31 @@ const sections = computed(() => {
   }
 })
 
-// Inline ListItem component
-const ListItem = {
-  props: ['pren', 'selected'],
-  emits: ['click'],
-  setup(props, { emit }) {
-    function fmtDate(d) {
-      if (!d) return ''
-      const dt = new Date(d)
-      const now = new Date()
-      if (dt.toDateString() === now.toDateString()) {
-        return dt.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
-      }
-      const months = ['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic']
-      return `${dt.getDate()} ${months[dt.getMonth()]}`
-    }
-    function preview(p) {
-      const parts = [p.tipo_richiesta || '']
-      if (p.data_arrivo) parts.push(`Arrivo: ${p.data_arrivo}`)
-      if (p.posto_per) parts.push(p.posto_per)
-      return parts.join(' - ')
-    }
-    return { fmtDate, preview, emit }
-  },
-  template: `
-    <div @click="emit('click')"
-      class="flex items-start gap-3 px-3 py-2.5 cursor-pointer border-l-[3px] border-b border-b-border/50 transition-all"
-      :class="selected ? 'border-l-secondary bg-secondary/5' : 'border-l-transparent hover:bg-gray-50'">
-      <div class="flex-1 min-w-0">
-        <div class="flex items-baseline justify-between gap-2">
-          <span class="text-sm truncate" :class="['Nuova','Nuova Risposta'].includes(pren.stato) ? 'font-bold text-gray-900' : 'font-medium text-gray-700'">
-            {{ [pren.nome, pren.cognome].filter(Boolean).join(' ') || pren.email || 'Senza nome' }}
-          </span>
-          <span class="flex-shrink-0 text-[11px] text-gray-400 tabular-nums">{{ fmtDate(pren.data_ricezione) }}</span>
-        </div>
-        <p class="mt-0.5 text-xs text-gray-400 truncate">{{ preview(pren) }}</p>
-      </div>
-    </div>
-  `,
+// Helpers for list items
+function fmtDate(d) {
+  if (!d) return ''
+  const dt = new Date(d)
+  const now = new Date()
+  if (dt.toDateString() === now.toDateString()) {
+    return dt.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
+  }
+  const months = ['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic']
+  return `${dt.getDate()} ${months[dt.getMonth()]}`
+}
+
+function preview(p) {
+  const parts = [p.tipo_richiesta || '']
+  if (p.data_arrivo) parts.push(`Arrivo: ${p.data_arrivo}`)
+  if (p.posto_per) parts.push(p.posto_per)
+  return parts.join(' - ')
+}
+
+function prenName(p) {
+  return [p.nome, p.cognome].filter(Boolean).join(' ') || p.email || 'Senza nome'
+}
+
+function isUnread(stato) {
+  return stato === 'Nuova' || stato === 'Nuova Risposta'
 }
 
 // CSV export

@@ -646,6 +646,7 @@ def poll_emails(db, limit: int = 20) -> dict:
                         stato="Nuova",
                         message_id=mid,
                         lingua_suggerita=parsed.get("lingua", "IT"),
+                        data_ricezione=hdr["date"],
                     )
                     db.add(pren)
                     db.flush()
@@ -799,6 +800,7 @@ def import_full_history(
                     adulti=parsed.get("adulti"), bambini=parsed.get("bambini"),
                     posto_per=parsed.get("posto_per"), stato="Nuova",
                     message_id=mid, lingua_suggerita=parsed.get("lingua", "IT"),
+                    data_ricezione=hdr["date"],
                 )
                 db.add(pren)
                 db.flush()

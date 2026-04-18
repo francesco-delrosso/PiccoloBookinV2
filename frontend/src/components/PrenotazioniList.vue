@@ -28,7 +28,8 @@
         </div>
         <template v-if="!collapsed.risposte">
           <div v-for="p in sections.risposte" :key="p.id" @click="$emit('select', p.id)" class="list-item" :class="store.selected?.id === p.id ? 'border-l-secondary bg-secondary/5' : 'border-l-transparent hover:bg-gray-50'"><div class="flex-1 min-w-0"><div class="flex items-baseline justify-between gap-2"><span class="text-sm truncate" :class="isUnread(p.stato) ? 'font-bold text-gray-900' : 'font-medium text-gray-700'">{{ prenName(p) }}</span><span class="flex-shrink-0 text-[11px] text-gray-400 tabular-nums">{{ fmtDate(p.data_ricezione) }}</span></div><p class="mt-0.5 text-xs text-gray-400 truncate">{{ preview(p) }}</p></div></div>
-          <button v-if="hiddenCount('risposte') > 0" @click="showAll.risposte = true" class="show-more">Mostra altre {{ hiddenCount('risposte') }} piu vecchie</button>
+          <button v-if="hiddenCount('risposte') > 0" @click="showAll.risposte = true" class="show-more" v-if="!showAll.risposte">Mostra altre {{ hiddenCount('risposte') }} piu vecchie</button>
+          <button @click="showAll.risposte = false" class="show-more" v-if="showAll.risposte">Mostra meno</button>
         </template>
       </template>
 
@@ -41,7 +42,8 @@
         </div>
         <template v-if="!collapsed.daGestire">
           <div v-for="p in sections.daGestire" :key="p.id" @click="$emit('select', p.id)" class="list-item" :class="store.selected?.id === p.id ? 'border-l-secondary bg-secondary/5' : 'border-l-transparent hover:bg-gray-50'"><div class="flex-1 min-w-0"><div class="flex items-baseline justify-between gap-2"><span class="text-sm truncate" :class="isUnread(p.stato) ? 'font-bold text-gray-900' : 'font-medium text-gray-700'">{{ prenName(p) }}</span><span class="flex-shrink-0 text-[11px] text-gray-400 tabular-nums">{{ fmtDate(p.data_ricezione) }}</span></div><p class="mt-0.5 text-xs text-gray-400 truncate">{{ preview(p) }}</p></div></div>
-          <button v-if="hiddenCount('daGestire') > 0" @click="showAll.daGestire = true" class="show-more">Mostra altre {{ hiddenCount('daGestire') }} piu vecchie</button>
+          <button v-if="hiddenCount('daGestire') > 0" @click="showAll.daGestire = true" class="show-more" v-if="!showAll.daGestire">Mostra altre {{ hiddenCount('daGestire') }} piu vecchie</button>
+          <button @click="showAll.daGestire = false" class="show-more" v-if="showAll.daGestire">Mostra meno</button>
         </template>
       </template>
 
@@ -54,7 +56,8 @@
         </div>
         <template v-if="!collapsed.attesa">
           <div v-for="p in sections.attesa" :key="p.id" @click="$emit('select', p.id)" class="list-item" :class="store.selected?.id === p.id ? 'border-l-secondary bg-secondary/5' : 'border-l-transparent hover:bg-gray-50'"><div class="flex-1 min-w-0"><div class="flex items-baseline justify-between gap-2"><span class="text-sm truncate" :class="isUnread(p.stato) ? 'font-bold text-gray-900' : 'font-medium text-gray-700'">{{ prenName(p) }}</span><span class="flex-shrink-0 text-[11px] text-gray-400 tabular-nums">{{ fmtDate(p.data_ricezione) }}</span></div><p class="mt-0.5 text-xs text-gray-400 truncate">{{ preview(p) }}</p></div></div>
-          <button v-if="hiddenCount('attesa') > 0" @click="showAll.attesa = true" class="show-more">Mostra altre {{ hiddenCount('attesa') }}</button>
+          <button v-if="hiddenCount('attesa') > 0" @click="showAll.attesa = true" class="show-more" v-if="!showAll.attesa">Mostra altre {{ hiddenCount('attesa') }}</button>
+          <button @click="showAll.attesa = false" class="show-more" v-if="showAll.attesa">Mostra meno</button>
         </template>
       </template>
 
@@ -67,7 +70,8 @@
         </div>
         <template v-if="!collapsed.confermate">
           <div v-for="p in sections.confermate" :key="p.id" @click="$emit('select', p.id)" class="list-item" :class="store.selected?.id === p.id ? 'border-l-secondary bg-secondary/5' : 'border-l-transparent hover:bg-gray-50'"><div class="flex-1 min-w-0"><div class="flex items-baseline justify-between gap-2"><span class="text-sm truncate" :class="isUnread(p.stato) ? 'font-bold text-gray-900' : 'font-medium text-gray-700'">{{ prenName(p) }}</span><span class="flex-shrink-0 text-[11px] text-gray-400 tabular-nums">{{ fmtDate(p.data_ricezione) }}</span></div><p class="mt-0.5 text-xs text-gray-400 truncate">{{ preview(p) }}</p></div></div>
-          <button v-if="hiddenCount('confermate') > 0" @click="showAll.confermate = true" class="show-more">Mostra altre {{ hiddenCount('confermate') }}</button>
+          <button v-if="hiddenCount('confermate') > 0" @click="showAll.confermate = true" class="show-more" v-if="!showAll.confermate">Mostra altre {{ hiddenCount('confermate') }}</button>
+          <button @click="showAll.confermate = false" class="show-more" v-if="showAll.confermate">Mostra meno</button>
         </template>
       </template>
 
@@ -80,7 +84,8 @@
         </div>
         <template v-if="!collapsed.rifiutate">
           <div v-for="p in sections.rifiutate" :key="p.id" @click="$emit('select', p.id)" class="list-item" :class="store.selected?.id === p.id ? 'border-l-secondary bg-secondary/5' : 'border-l-transparent hover:bg-gray-50'"><div class="flex-1 min-w-0"><div class="flex items-baseline justify-between gap-2"><span class="text-sm truncate" :class="isUnread(p.stato) ? 'font-bold text-gray-900' : 'font-medium text-gray-700'">{{ prenName(p) }}</span><span class="flex-shrink-0 text-[11px] text-gray-400 tabular-nums">{{ fmtDate(p.data_ricezione) }}</span></div><p class="mt-0.5 text-xs text-gray-400 truncate">{{ preview(p) }}</p></div></div>
-          <button v-if="hiddenCount('rifiutate') > 0" @click="showAll.rifiutate = true" class="show-more">Mostra altre {{ hiddenCount('rifiutate') }}</button>
+          <button v-if="hiddenCount('rifiutate') > 0" @click="showAll.rifiutate = true" class="show-more" v-if="!showAll.rifiutate">Mostra altre {{ hiddenCount('rifiutate') }}</button>
+          <button @click="showAll.rifiutate = false" class="show-more" v-if="showAll.rifiutate">Mostra meno</button>
         </template>
       </template>
     </div>

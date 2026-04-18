@@ -145,6 +145,12 @@ def invia_messaggio(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Errore invio: {e}")
 
+    # Check if message_id already exists (SMTP rewrite can return same ID)
+    existing = db.query(StoricoMessaggio).filter_by(message_id=new_mid).first() if new_mid else None
+    if existing:
+        from email.utils import make_msgid
+        new_mid = make_msgid(domain="piccolocamping.com").strip("<>")
+
     msg = StoricoMessaggio(
         id_prenotazione=pren_id,
         mittente="Campeggio",

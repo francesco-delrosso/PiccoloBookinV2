@@ -4,7 +4,7 @@
     <div class="order-last md:order-first w-full md:w-[52px] shrink-0 bg-primary-dark flex md:flex-col items-center justify-around md:justify-start md:py-4 md:gap-1 py-1">
       <div class="hidden md:flex w-8 h-8 rounded-lg bg-white/20 items-center justify-center text-white font-bold text-xs md:mb-4">PC</div>
       <button v-for="nav in navItems" :key="nav.id"
-        @click="activePanel = nav.id; selectedView = 'list'"
+        @click="activePanel = nav.id; store.selected = null"
         class="nav-icon" :class="activePanel === nav.id ? 'bg-white/20 text-white' : 'text-white/50 hover:text-white hover:bg-white/10'"
         :title="nav.label">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
@@ -17,7 +17,7 @@
     <div class="flex-1 flex flex-col min-w-0">
 
       <!-- MAIL: List view -->
-      <template v-if="activePanel === 'mail' && selectedView === 'list'">
+      <template v-if="activePanel === 'mail'">
         <!-- Import bar -->
         <div class="px-4 py-2 border-b border-border bg-surface flex items-center gap-2 shrink-0">
           <button class="px-3 py-1.5 text-xs font-medium rounded-lg bg-primary text-white hover:bg-primary-dark disabled:opacity-50"
@@ -47,22 +47,6 @@
         <PrenotazioniList class="flex-1 min-h-0" @select="onSelect" />
       </template>
 
-      <!-- MAIL: Detail view -->
-      <template v-if="activePanel === 'mail' && selectedView === 'detail' && store.selected">
-        <!-- Back + toolbar -->
-        <div class="px-4 py-2 border-b border-border bg-surface flex items-center gap-2 shrink-0">
-          <button @click="selectedView = 'list'" class="tb-btn bg-white text-gray-600 border border-border hover:bg-gray-50">&larr; Lista</button>
-          <div class="w-px h-5 bg-border mx-1"></div>
-          <button @click="handleAction('accetta')" class="tb-btn bg-green-600 hover:bg-green-700 text-white">Accetta</button>
-          <button @click="handleAction('accetta_noCaparra')" class="tb-btn bg-white text-green-700 border border-green-300 hover:bg-green-50">Senza caparra</button>
-          <button @click="handleAction('rifiuta')" class="tb-btn bg-red-600 hover:bg-red-700 text-white">Rifiuta</button>
-          <button v-if="store.selected.stato === 'Attesa Bonifico'" @click="confirmBonifico" class="tb-btn bg-warm hover:bg-warm-dark text-white">Bonifico ricevuto</button>
-          <button @click="handleAction('elimina')" class="tb-btn ml-auto bg-red-100 text-red-700 hover:bg-red-600 hover:text-white">Elimina</button>
-        </div>
-        <DettaglioPrenotazione :prenotazione="store.selected" @saved="onSaved" />
-        <ChatStorico class="flex-1 min-h-0" :messaggi="store.selected.messaggi || []" :prenId="store.selected.id" />
-      </template>
-
       <!-- CALENDARIO -->
       <div v-if="activePanel === 'calendario'" class="flex-1 overflow-y-auto">
         <Calendario />
@@ -78,6 +62,34 @@
         <Impostazioni />
       </div>
     </div>
+
+    <!-- Detail panel (slide from right) -->
+    <Transition name="panel">
+      <div v-if="store.selected && activePanel === 'mail'"
+        class="fixed inset-y-0 right-0 w-full md:w-[55%] lg:w-[50%] bg-surface shadow-2xl z-40 flex flex-col border-l border-border">
+        <!-- Header -->
+        <div class="px-4 py-2 border-b border-border bg-gray-50 flex items-center gap-2 shrink-0">
+          <button @click="closeDetail" class="tb-btn bg-white text-gray-600 border border-border hover:bg-gray-50">✕</button>
+          <div class="w-px h-5 bg-border mx-1"></div>
+          <button @click="handleAction('accetta')" class="tb-btn bg-green-600 hover:bg-green-700 text-white">Accetta</button>
+          <button @click="handleAction('accetta_noCaparra')" class="tb-btn bg-white text-green-700 border border-green-300 hover:bg-green-50">Senza caparra</button>
+          <button @click="handleAction('rifiuta')" class="tb-btn bg-red-600 hover:bg-red-700 text-white">Rifiuta</button>
+          <button v-if="store.selected.stato === 'Attesa Bonifico'" @click="confirmBonifico" class="tb-btn bg-warm hover:bg-warm-dark text-white">Bonifico ricevuto</button>
+          <button @click="handleAction('elimina')" class="tb-btn ml-auto bg-red-100 text-red-700 hover:bg-red-600 hover:text-white">Elimina</button>
+        </div>
+        <!-- Content -->
+        <DettaglioPrenotazione :prenotazione="store.selected" @saved="onSaved" />
+        <ChatStorico class="flex-1 min-h-0" :messaggi="store.selected.messaggi || []" :prenId="store.selected.id" />
+      </div>
+    </Transition>
+
+    <!-- Backdrop -->
+    <Transition name="fade">
+      <div v-if="store.selected && activePanel === 'mail'"
+        class="fixed inset-0 bg-black/20 z-30"
+        @click="closeDetail">
+      </div>
+    </Transition>
 
     <!-- Modal -->
     <ModalEmail
@@ -116,7 +128,6 @@ import Impostazioni from '../views/Impostazioni.vue'
 const store = usePrenotazioniStore()
 
 const activePanel = ref('mail')
-const selectedView = ref('list') // 'list' or 'detail'
 
 const navItems = [
   { id: 'mail', label: 'Mail', icon: 'M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75' },
@@ -154,7 +165,10 @@ function showToast(message, type = 'success') {
 
 async function onSelect(id) {
   await store.selectPrenotazione(id)
-  selectedView.value = 'detail'
+}
+
+function closeDetail() {
+  store.selected = null
 }
 
 async function onSaved() {
@@ -187,7 +201,7 @@ async function handleReset() {
     await resetReimport(100)
     store.startJobPolling()
     store.selected = null
-    selectedView.value = 'list'
+    store.selected = null
     showToast('Reset avviato')
   } catch (e) { showToast('Errore reset', 'error') }
 }
@@ -208,7 +222,7 @@ async function handleAction(action) {
     try {
       await deletePrenotazione(store.selected.id)
       store.selected = null
-      selectedView.value = 'list'
+      store.selected = null
       await store.fetchAll()
       showToast('Eliminata')
     } catch { showToast('Errore', 'error') }
@@ -247,6 +261,10 @@ onUnmounted(() => {
   padding: 0.35rem 0.75rem; font-size: 0.75rem; font-weight: 600;
   border-radius: 0.4rem; transition: all 0.15s; white-space: nowrap;
 }
+.panel-enter-active, .panel-leave-active { transition: transform 0.25s ease; }
+.panel-enter-from, .panel-leave-to { transform: translateX(100%); }
+.fade-enter-active, .fade-leave-active { transition: opacity 0.2s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
 .toast-enter-active, .toast-leave-active { transition: all 0.3s ease; }
 .toast-enter-from, .toast-leave-to { opacity: 0; transform: translateY(10px); }
 </style>

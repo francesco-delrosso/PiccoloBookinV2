@@ -13,10 +13,15 @@
         class="px-3 py-1.5 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
         <option v-for="f in filterOptions" :key="f.key" :value="f.key">{{ f.label }} ({{ filterCounts[f.key] }})</option>
       </select>
-      <div class="flex items-center gap-1 text-xs text-gray-500">
-        <button @click="page > 1 && page--" :disabled="page <= 1" class="pg-btn">&larr;</button>
-        <span>{{ page }}/{{ totalPages }}</span>
-        <button @click="page < totalPages && page++" :disabled="page >= totalPages" class="pg-btn">&rarr;</button>
+      <div class="flex items-center gap-0.5 text-xs">
+        <button @click="page = 1" :disabled="page <= 1" class="pg-btn">&laquo;</button>
+        <button @click="page > 1 && page--" :disabled="page <= 1" class="pg-btn">&lsaquo;</button>
+        <template v-for="n in visiblePages" :key="n">
+          <span v-if="n === '...'" class="px-1 text-gray-400">...</span>
+          <button v-else @click="page = n" class="pg-btn" :class="page === n ? 'bg-primary text-white border-primary' : ''">{{ n }}</button>
+        </template>
+        <button @click="page < totalPages && page++" :disabled="page >= totalPages" class="pg-btn">&rsaquo;</button>
+        <button @click="page = totalPages" :disabled="page >= totalPages" class="pg-btn">&raquo;</button>
       </div>
       <div class="flex gap-1">
         <button @click="exportCSV" class="tb-sm">CSV</button>
@@ -81,8 +86,7 @@
 
     <!-- Footer -->
     <div class="px-4 py-2 border-t border-border bg-bg/80 text-xs text-gray-400 flex items-center justify-between shrink-0">
-      <span>{{ filtered.length }} risultati</span>
-      <span>Pagina {{ page }} di {{ totalPages }}</span>
+      <span>{{ filtered.length }} risultati — mostrando {{ (page-1)*PER_PAGE+1 }}-{{ Math.min(page*PER_PAGE, filtered.length) }}</span>
     </div>
   </div>
 </template>
@@ -159,6 +163,21 @@ const filtered = computed(() => {
 })
 
 const totalPages = computed(() => Math.max(1, Math.ceil(filtered.value.length / PER_PAGE)))
+
+const visiblePages = computed(() => {
+  const total = totalPages.value
+  const cur = page.value
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1)
+  const pages = []
+  pages.push(1)
+  if (cur > 3) pages.push('...')
+  for (let i = Math.max(2, cur - 1); i <= Math.min(total - 1, cur + 1); i++) {
+    pages.push(i)
+  }
+  if (cur < total - 2) pages.push('...')
+  pages.push(total)
+  return pages
+})
 const pagedItems = computed(() => {
   if (page.value > totalPages.value) page.value = totalPages.value
   const start = (page.value - 1) * PER_PAGE

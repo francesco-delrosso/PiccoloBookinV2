@@ -38,7 +38,6 @@
               Arrivo {{ sortIcon('data_arrivo') }}
             </th>
             <th class="px-3 py-2 font-semibold hidden lg:table-cell">Partenza</th>
-            <th class="px-3 py-2 font-semibold hidden lg:table-cell">Ospiti</th>
             <th class="px-3 py-2 font-semibold hidden md:table-cell">Tipo</th>
             <th class="px-3 py-2 font-semibold">Stato</th>
             <th class="px-3 py-2 font-semibold cursor-pointer hover:text-gray-700 text-right" @click="toggleSort('data_ricezione')">
@@ -63,10 +62,6 @@
             <td class="px-3 py-2.5 text-gray-500 hidden md:table-cell truncate max-w-[200px]">{{ p.email || '' }}</td>
             <td class="px-3 py-2.5 text-gray-600 tabular-nums">{{ fmtShort(p.data_arrivo) }}</td>
             <td class="px-3 py-2.5 text-gray-500 tabular-nums hidden lg:table-cell">{{ fmtShort(p.data_partenza) }}</td>
-            <td class="px-3 py-2.5 text-gray-500 hidden lg:table-cell">
-              <span v-if="p.adulti">{{ p.adulti }}ad</span>
-              <span v-if="p.bambini" class="ml-1">{{ p.bambini }}bam</span>
-            </td>
             <td class="px-3 py-2.5 hidden md:table-cell">
               <span class="text-xs px-1.5 py-0.5 rounded font-medium"
                 :class="p.tipo_richiesta === 'Prenotazione' ? 'bg-warm/10 text-warm-dark' : 'bg-secondary/10 text-secondary-dark'">

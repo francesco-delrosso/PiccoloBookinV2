@@ -452,6 +452,45 @@ def _campsite_addrs(settings: dict) -> set[str]:
 
 
 
+def _auto_categorize_all(db) -> int:
+    """Auto-categorize prenotazioni based on conversation state.
+
+    Rules:
+    - Nuova + has Campeggio reply → In lavorazione
+    - Nuova + has Campeggio reply + older than 30 days → Confermata
+    - Only touches 'Nuova' stato (doesn't override manual changes)
+    """
+    from datetime import timedelta
+    cutoff_30d = datetime.now() - timedelta(days=30)
+
+    # Get all prenotazioni with stato='Nuova'
+    nuove = db.query(Prenotazione).filter(Prenotazione.stato == "Nuova").all()
+    updated = 0
+
+    for pren in nuove:
+        # Check if campeggio has replied
+        has_reply = (
+            db.query(StoricoMessaggio)
+            .filter_by(id_prenotazione=pren.id, mittente="Campeggio")
+            .first()
+        ) is not None
+
+        if not has_reply:
+            continue  # truly new, no reply yet
+
+        # Has reply — check age
+        if pren.data_ricezione and pren.data_ricezione < cutoff_30d:
+            pren.stato = "Confermata"
+        else:
+            pren.stato = "In lavorazione"
+        updated += 1
+
+    if updated:
+        db.commit()
+
+    return updated
+
+
 def _is_form_email(from_addr: str, settings: dict) -> bool:
     form = settings.get("email_form_sito", "").lower()
     return bool(form) and from_addr.lower() == form
@@ -876,6 +915,12 @@ def import_full_history(
             _update(processed=job_state.get("processed", 0) + 1 if job_state else 0)
 
         logger.info("[FULL] Pass 2: %d replies linked", reply_count)
+
+        # Pass 3: auto-categorize based on conversation state
+        _update(status="categorizing")
+        categorized = _auto_categorize_all(db)
+        logger.info("[FULL] Pass 3: %d prenotazioni auto-categorized", categorized)
+
         _update(status="done")
 
     except Exception as ex:

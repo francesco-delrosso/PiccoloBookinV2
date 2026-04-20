@@ -116,7 +116,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { updatePrenotazione, getPrezzi, getImpostazioni } from '../api'
 import { usePrenotazioniStore } from '../stores/prenotazioni'
 
@@ -127,7 +127,7 @@ const store = usePrenotazioniStore()
 const p = computed(() => props.prenotazione || {})
 const lingue = ['IT', 'EN', 'DE', 'FR', 'NL', 'ES']
 const saving = ref(false)
-const expanded = ref(false)
+const expanded = ref(true)
 
 const primoMessaggio = computed(() => {
   const msgs = p.value.messaggi
@@ -152,6 +152,8 @@ onMounted(async () => {
     listino.value = pr.data
     const c = se.data.find(s => s.chiave === 'caparra_percentuale')
     if (c) caparraPerc.value = parseInt(c.valore) || 30
+    // Auto-calculate after listino loaded
+    if (canCalcola.value && !form.value.costo_totale) calcola()
   } catch {}
 })
 
@@ -171,7 +173,15 @@ function resetForm() {
   breakdown.value = []
   costoCalcolato.value = 0
 }
-watch(() => p.value.id, resetForm, { immediate: true })
+watch(() => p.value.id, () => {
+  resetForm()
+  // Auto-calculate cost if we have enough data
+  nextTick(() => {
+    if (canCalcola.value && !form.value.costo_totale) {
+      calcola()
+    }
+  })
+}, { immediate: true })
 
 const isDirty = computed(() => editableKeys.some(k => String(p.value[k] ?? '') !== String(form.value[k] ?? '')))
 const canCalcola = computed(() => form.value.data_arrivo && form.value.data_partenza && form.value.adulti > 0 && listino.value)

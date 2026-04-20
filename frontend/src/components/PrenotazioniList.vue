@@ -13,16 +13,6 @@
         class="px-3 py-1.5 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
         <option v-for="f in filterOptions" :key="f.key" :value="f.key">{{ f.label }} ({{ filterCounts[f.key] }})</option>
       </select>
-      <div class="flex items-center gap-0.5 text-xs">
-        <button @click="page = 1" :disabled="page <= 1" class="pg-btn">&laquo;</button>
-        <button @click="page > 1 && page--" :disabled="page <= 1" class="pg-btn">&lsaquo;</button>
-        <template v-for="n in visiblePages" :key="n">
-          <span v-if="n === '...'" class="px-1 text-gray-400">...</span>
-          <button v-else @click="page = n" class="pg-btn" :class="page === n ? 'bg-primary text-white border-primary' : ''">{{ n }}</button>
-        </template>
-        <button @click="page < totalPages && page++" :disabled="page >= totalPages" class="pg-btn">&rsaquo;</button>
-        <button @click="page = totalPages" :disabled="page >= totalPages" class="pg-btn">&raquo;</button>
-      </div>
       <div class="flex gap-1">
         <button @click="exportCSV" class="tb-sm">CSV</button>
         <button @click="window.print()" class="tb-sm">Stampa</button>
@@ -31,21 +21,21 @@
 
     <!-- Table -->
     <div class="flex-1 overflow-auto">
-      <table class="w-full text-sm">
+      <table class="w-full">
         <thead class="bg-gray-50 sticky top-0 z-10">
-          <tr class="text-left text-xs text-gray-500 uppercase tracking-wide">
-            <th class="px-4 py-2 font-semibold w-8"></th>
-            <th class="px-3 py-2 font-semibold cursor-pointer hover:text-gray-700" @click="toggleSort('nome')">
+          <tr class="text-left text-sm text-gray-500 uppercase tracking-wide">
+            <th class="px-4 py-3 font-semibold w-8"></th>
+            <th class="px-3 py-3 font-semibold cursor-pointer hover:text-gray-700" @click="toggleSort('nome')">
               Nome {{ sortIcon('nome') }}
             </th>
-            <th class="px-3 py-2 font-semibold hidden md:table-cell">Email</th>
-            <th class="px-3 py-2 font-semibold cursor-pointer hover:text-gray-700" @click="toggleSort('data_arrivo')">
+            <th class="px-3 py-3 font-semibold hidden md:table-cell">Email</th>
+            <th class="px-3 py-3 font-semibold cursor-pointer hover:text-gray-700" @click="toggleSort('data_arrivo')">
               Arrivo {{ sortIcon('data_arrivo') }}
             </th>
-            <th class="px-3 py-2 font-semibold hidden lg:table-cell">Partenza</th>
-            <th class="px-3 py-2 font-semibold hidden md:table-cell">Tipo</th>
-            <th class="px-3 py-2 font-semibold">Stato</th>
-            <th class="px-3 py-2 font-semibold cursor-pointer hover:text-gray-700 text-right" @click="toggleSort('data_ricezione')">
+            <th class="px-3 py-3 font-semibold hidden lg:table-cell">Partenza</th>
+            <th class="px-3 py-3 font-semibold hidden md:table-cell">Tipo</th>
+            <th class="px-3 py-3 font-semibold">Stato</th>
+            <th class="px-3 py-3 font-semibold cursor-pointer hover:text-gray-700 text-right" @click="toggleSort('data_ricezione')">
               Data {{ sortIcon('data_ricezione') }}
             </th>
           </tr>
@@ -58,35 +48,45 @@
             @click="$emit('select', p.id)"
             class="border-b border-border/50 cursor-pointer transition-colors"
             :class="store.selected?.id === p.id ? 'bg-secondary/5' : 'hover:bg-gray-50'">
-            <td class="px-4 py-2.5">
+            <td class="px-4 py-3.5">
               <span class="inline-block w-2.5 h-2.5 rounded-full" :class="dotClass(p.stato)"></span>
             </td>
-            <td class="px-3 py-2.5 font-medium" :class="isUnread(p.stato) ? 'text-gray-900 font-bold' : 'text-gray-700'">
+            <td class="px-3 py-3.5 text-sm font-medium" :class="isUnread(p.stato) ? 'text-gray-900 font-bold' : 'text-gray-700'">
               {{ prenName(p) }}
             </td>
-            <td class="px-3 py-2.5 text-gray-500 hidden md:table-cell truncate max-w-[200px]">{{ p.email || '' }}</td>
-            <td class="px-3 py-2.5 text-gray-600 tabular-nums">{{ fmtShort(p.data_arrivo) }}</td>
-            <td class="px-3 py-2.5 text-gray-500 tabular-nums hidden lg:table-cell">{{ fmtShort(p.data_partenza) }}</td>
-            <td class="px-3 py-2.5 hidden md:table-cell">
+            <td class="px-3 py-3.5 text-sm text-gray-500 hidden md:table-cell truncate max-w-[200px]">{{ p.email || '' }}</td>
+            <td class="px-3 py-3.5 text-sm text-gray-600 tabular-nums">{{ fmtShort(p.data_arrivo) }}</td>
+            <td class="px-3 py-3.5 text-sm text-gray-500 tabular-nums hidden lg:table-cell">{{ fmtShort(p.data_partenza) }}</td>
+            <td class="px-3 py-3.5 text-sm hidden md:table-cell">
               <span class="text-xs px-1.5 py-0.5 rounded font-medium"
                 :class="p.tipo_richiesta === 'Prenotazione' ? 'bg-warm/10 text-warm-dark' : 'bg-secondary/10 text-secondary-dark'">
                 {{ p.tipo_richiesta === 'Prenotazione' ? 'Pren.' : 'Cont.' }}
               </span>
             </td>
-            <td class="px-3 py-2.5">
+            <td class="px-3 py-3.5 text-sm">
               <span class="text-xs px-2 py-0.5 rounded-full font-semibold" :class="statoClass(p.stato)">
                 {{ statoShort(p.stato) }}
               </span>
             </td>
-            <td class="px-3 py-2.5 text-right text-xs text-gray-400 tabular-nums">{{ fmtDate(p.data_ricezione) }}</td>
+            <td class="px-3 py-3.5 text-sm text-right text-xs text-gray-400 tabular-nums">{{ fmtDate(p.data_ricezione) }}</td>
           </tr>
         </tbody>
       </table>
     </div>
 
     <!-- Footer -->
-    <div class="px-4 py-2 border-t border-border bg-bg/80 text-xs text-gray-400 flex items-center justify-between shrink-0">
-      <span>{{ filtered.length }} risultati — mostrando {{ (page-1)*PER_PAGE+1 }}-{{ Math.min(page*PER_PAGE, filtered.length) }}</span>
+    <div class="px-4 py-3 border-t border-border bg-bg/80 flex flex-col items-center gap-2 shrink-0">
+      <div class="flex items-center gap-1">
+        <button @click="page = 1" :disabled="page <= 1" class="pg-btn">&laquo;</button>
+        <button @click="page > 1 && page--" :disabled="page <= 1" class="pg-btn">&lsaquo;</button>
+        <template v-for="n in visiblePages" :key="n">
+          <span v-if="n === '...'" class="px-1.5 text-gray-400 text-sm">...</span>
+          <button v-else @click="page = n" class="pg-btn" :class="page === n ? 'bg-primary text-white border-primary' : ''">{{ n }}</button>
+        </template>
+        <button @click="page < totalPages && page++" :disabled="page >= totalPages" class="pg-btn">&rsaquo;</button>
+        <button @click="page = totalPages" :disabled="page >= totalPages" class="pg-btn">&raquo;</button>
+      </div>
+      <span class="text-xs text-gray-400">{{ filtered.length }} risultati</span>
     </div>
   </div>
 </template>
@@ -266,13 +266,15 @@ function exportCSV() {
 
 <style scoped>
 .pg-btn {
-  padding: 0.2rem 0.5rem;
+  padding: 0.4rem 0.7rem;
   border: 1px solid var(--color-border);
-  border-radius: 0.35rem;
-  font-size: 0.75rem;
+  border-radius: 0.4rem;
+  font-size: 0.875rem;
   background: white;
   cursor: pointer;
   transition: all 0.15s;
+  min-width: 2rem;
+  text-align: center;
 }
 .pg-btn:hover:not(:disabled) { background: #f3f4f6; }
 .pg-btn:disabled { opacity: 0.3; cursor: default; }

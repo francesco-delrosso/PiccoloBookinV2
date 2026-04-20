@@ -30,7 +30,7 @@
     </div>
 
     <!-- 3-month calendar grid -->
-    <div class="grid grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <div v-for="offset in [0, 1, 2]" :key="offset" class="bg-surface rounded-xl shadow-sm border border-border p-4">
         <h3 class="text-sm font-bold text-center text-gray-700 mb-3">{{ monthLabel(startMonth + offset) }}</h3>
         <div class="grid grid-cols-7 gap-0.5 text-center text-xs">
@@ -41,10 +41,14 @@
             v-for="(day, di) in monthDays(startMonth + offset)"
             :key="di"
             @click="day.date && toggleDate(day.date)"
-            class="py-1.5 rounded cursor-pointer transition-colors select-none"
+            class="relative py-1.5 rounded cursor-pointer transition-colors select-none"
             :class="dayClass(day)"
           >
             {{ day.num || '' }}
+            <span v-if="day.date && bookingDates[day.date]"
+              class="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full"
+              :class="closedDates.has(day.date) ? 'bg-white/60' : 'bg-green-500'"
+            ></span>
           </div>
         </div>
       </div>
@@ -79,6 +83,9 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { getImpostazioni, updateImpostazione } from '../api'
+import { usePrenotazioniStore } from '../stores/prenotazioni'
+
+const store = usePrenotazioniStore()
 
 const closedDates = ref(new Set())
 const disponibileDa = ref('')
@@ -94,6 +101,23 @@ function showToast(message, type = 'success') {
   clearTimeout(toastTimer)
   toastTimer = setTimeout(() => { toast.value.show = false }, 3000)
 }
+
+// Build set of dates that have bookings (arrivo → partenza ranges)
+const bookingDates = computed(() => {
+  const dates = {}
+  for (const p of (store.list || [])) {
+    if (!p.data_arrivo || p.stato === 'Rifiutata') continue
+    const start = new Date(p.data_arrivo)
+    const end = p.data_partenza ? new Date(p.data_partenza) : new Date(start.getTime() + 86400000)
+    const cur = new Date(start)
+    while (cur < end) {
+      const key = cur.toISOString().slice(0, 10)
+      dates[key] = (dates[key] || 0) + 1
+      cur.setDate(cur.getDate() + 1)
+    }
+  }
+  return dates
+})
 
 function prevMonths() { startMonth.value -= 3 }
 function nextMonths() { startMonth.value += 3 }
@@ -194,6 +218,7 @@ function formatDate(d) {
 
 // Load/Save
 onMounted(async () => {
+  if (!store.list.length) await store.fetchAll()
   try {
     const { data } = await getImpostazioni()
     const row = data.find(s => s.chiave === 'date_chiuse')

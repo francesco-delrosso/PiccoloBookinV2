@@ -1,10 +1,10 @@
 <template>
-  <div class="flex h-screen">
-    <!-- Icon sidebar -->
-    <div class="w-[52px] shrink-0 bg-primary-dark flex flex-col items-center py-4 gap-1">
-      <div class="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center text-white font-bold text-xs mb-4">PC</div>
+  <div class="flex flex-col md:flex-row h-screen">
+    <!-- Icon sidebar (left on desktop, bottom on mobile) -->
+    <div class="order-last md:order-first w-full md:w-[52px] shrink-0 bg-primary-dark flex md:flex-col items-center justify-around md:justify-start md:py-4 md:gap-1 py-1">
+      <div class="hidden md:flex w-8 h-8 rounded-lg bg-white/20 items-center justify-center text-white font-bold text-xs md:mb-4">PC</div>
       <button v-for="nav in navItems" :key="nav.id"
-        @click="activePanel = nav.id"
+        @click="activePanel = nav.id; mobileShowDetail = false"
         class="nav-icon" :class="activePanel === nav.id ? 'bg-white/20 text-white' : 'text-white/50 hover:text-white hover:bg-white/10'"
         :title="nav.label">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
@@ -13,8 +13,10 @@
       </button>
     </div>
 
-    <!-- List sidebar (only visible on mail panel) -->
-    <div v-if="activePanel === 'mail'" class="w-[300px] shrink-0 bg-surface border-r border-border flex flex-col">
+    <!-- List sidebar (desktop: always visible; mobile: hidden when detail shown) -->
+    <div v-if="activePanel === 'mail'" class="w-full md:w-[300px] shrink-0 bg-surface border-r border-border flex flex-col"
+      :class="mobileShowDetail ? 'hidden md:flex' : 'flex'"
+    >
       <!-- Import toolbar -->
       <div class="px-3 py-2 border-b border-border flex items-center gap-2">
         <button class="px-3 py-1.5 text-xs font-medium rounded-lg bg-primary text-white hover:bg-primary-dark disabled:opacity-50"
@@ -48,13 +50,17 @@
       <PrenotazioniList class="flex-1 min-h-0" @select="onSelect" />
     </div>
 
-    <!-- Right panel -->
-    <div class="flex-1 flex flex-col min-w-0">
+    <!-- Right panel (mobile: hidden when list shown, desktop: always) -->
+    <div class="flex-1 flex flex-col min-w-0"
+      :class="activePanel === 'mail' && !mobileShowDetail ? 'hidden md:flex' : 'flex'">
 
       <!-- MAIL panel -->
       <template v-if="activePanel === 'mail'">
         <template v-if="store.selected">
           <!-- Toolbar -->
+          <div class="md:hidden px-3 py-2 border-b border-border bg-surface">
+            <button @click="mobileShowDetail = false" class="text-sm text-secondary font-medium">&larr; Lista</button>
+          </div>
           <div class="px-4 py-2 border-b border-border bg-surface flex items-center gap-2 shrink-0">
             <button @click="handleAction('accetta')"
               class="tb-btn bg-green-600 hover:bg-green-700 text-white">Accetta</button>
@@ -129,6 +135,7 @@ import Impostazioni from '../views/Impostazioni.vue'
 const store = usePrenotazioniStore()
 
 const activePanel = ref('mail')
+const mobileShowDetail = ref(false)
 
 const navItems = [
   { id: 'mail', label: 'Mail', icon: 'M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75' },
@@ -168,6 +175,7 @@ function showToast(message, type = 'success') {
 async function onSelect(id) {
   activePanel.value = 'mail'
   await store.selectPrenotazione(id)
+  mobileShowDetail.value = true
 }
 
 async function onSaved() {

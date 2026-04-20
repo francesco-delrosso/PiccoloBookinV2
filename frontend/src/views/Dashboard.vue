@@ -78,8 +78,20 @@
           <button @click="handleAction('elimina')" class="tb-btn ml-auto bg-red-100 text-red-700 hover:bg-red-600 hover:text-white">Elimina</button>
         </div>
         <!-- Content -->
-        <DettaglioPrenotazione :prenotazione="store.selected" @saved="onSaved" />
-        <ChatStorico class="flex-1 min-h-0" :messaggi="store.selected.messaggi || []" :prenId="store.selected.id" />
+        <div class="flex-1 overflow-y-auto">
+          <DettaglioPrenotazione :prenotazione="store.selected" @saved="onSaved" />
+          <!-- Collapsible messages -->
+          <div class="border-t border-border">
+            <button @click="chatOpen = !chatOpen"
+              class="w-full px-4 py-2.5 flex items-center justify-between text-sm font-semibold text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors">
+              <span>Messaggi ({{ (store.selected.messaggi || []).length }})</span>
+              <svg class="w-4 h-4 transition-transform" :class="chatOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+              </svg>
+            </button>
+            <ChatStorico v-if="chatOpen" :messaggi="store.selected.messaggi || []" :prenId="store.selected.id" />
+          </div>
+        </div>
       </div>
     </Transition>
 
@@ -128,6 +140,7 @@ import Impostazioni from '../views/Impostazioni.vue'
 const store = usePrenotazioniStore()
 
 const activePanel = ref('mail')
+const chatOpen = ref(false)
 
 const navItems = [
   { id: 'mail', label: 'Mail', icon: 'M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75' },
@@ -169,6 +182,7 @@ async function onSelect(id) {
 
 function closeDetail() {
   store.selected = null
+  chatOpen.value = false
 }
 
 async function onSaved() {

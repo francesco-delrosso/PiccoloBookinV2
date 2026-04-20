@@ -457,12 +457,9 @@ def _auto_categorize_all(db) -> int:
 
     Rules:
     - Nuova + has Campeggio reply → In lavorazione
-    - Nuova + has Campeggio reply + older than 30 days → Confermata
     - Only touches 'Nuova' stato (doesn't override manual changes)
+    - NEVER auto-confirms — only user can confirm (reply might be a rejection)
     """
-    from datetime import timedelta
-    cutoff_30d = datetime.now() - timedelta(days=30)
-
     # Get all prenotazioni with stato='Nuova'
     nuove = db.query(Prenotazione).filter(Prenotazione.stato == "Nuova").all()
     updated = 0
@@ -478,11 +475,7 @@ def _auto_categorize_all(db) -> int:
         if not has_reply:
             continue  # truly new, no reply yet
 
-        # Has reply — check age
-        if pren.data_ricezione and pren.data_ricezione < cutoff_30d:
-            pren.stato = "Confermata"
-        else:
-            pren.stato = "In lavorazione"
+        pren.stato = "In lavorazione"
         updated += 1
 
     if updated:

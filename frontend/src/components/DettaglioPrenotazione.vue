@@ -221,9 +221,9 @@ function calcola() {
   const lines = []; let total = 0
   for (const [si,n] of Object.entries(nights)) {
     const nm = listino.value.stagioni[si]?.nome||'Stagione', idx = parseInt(si)
-    if (aV && form.value.adulti > 0) { const x = form.value.adulti*n*(aV.prezzi[idx]||0); lines.push({label:`${n}n×${form.value.adulti}ad×€${aV.prezzi[idx]||0} (${nm})`,amount:x}); total+=x }
-    if (bV && form.value.bambini > 0 && (bV.prezzi[idx]||0)>0) { const x = form.value.bambini*n*(bV.prezzi[idx]||0); lines.push({label:`${n}n×${form.value.bambini}bam×€${bV.prezzi[idx]||0} (${nm})`,amount:x}); total+=x }
-    if (pV) { const x = n*(pV.prezzi[idx]||0); lines.push({label:`${n}n×piazzola×€${pV.prezzi[idx]||0} (${nm})`,amount:x}); total+=x }
+    if (aV && form.value.adulti > 0) { const px = aV.prezzi[idx]||0; const x = form.value.adulti*n*px; lines.push({label:`${n} notti, ${form.value.adulti} adulti a ${px}/notte (${nm})`,amount:x}); total+=x }
+    if (bV && form.value.bambini > 0 && (bV.prezzi[idx]||0)>0) { const px = bV.prezzi[idx]||0; const x = form.value.bambini*n*px; lines.push({label:`${n} notti, ${form.value.bambini} bambini a ${px}/notte (${nm})`,amount:x}); total+=x }
+    if (pV) { const px = pV.prezzi[idx]||0; const x = n*px; lines.push({label:`${n} notti, piazzola a ${px}/notte (${nm})`,amount:x}); total+=x }
   }
   breakdown.value = lines; costoCalcolato.value = total; form.value.costo_totale = Math.round(total*100)/100
 }

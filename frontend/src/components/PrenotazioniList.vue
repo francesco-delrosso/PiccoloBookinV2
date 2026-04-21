@@ -15,7 +15,7 @@
       </select>
       <div class="flex gap-1">
         <button @click="exportCSV" class="tb-sm">CSV</button>
-        <button @click="window.print()" class="tb-sm">Stampa</button>
+        <button @click="printPage" class="tb-sm">Stampa</button>
       </div>
     </div>
 
@@ -110,6 +110,7 @@ const DA_GESTIRE = ['Nuova', 'Nuova Risposta', 'In lavorazione', 'Attesa Bonific
 const filterOptions = [
   { key: 'tutti', label: 'Tutti' },
   { key: 'da_gestire', label: 'Da gestire' },
+  { key: 'nuova_risposta', label: 'Nuove risposte' },
   { key: 'in_lavorazione', label: 'In lavorazione' },
   { key: 'attesa', label: 'Attesa bonifico' },
   { key: 'confermate', label: 'Confermate' },
@@ -121,6 +122,7 @@ const filterCounts = computed(() => {
   return {
     tutti: list.length,
     da_gestire: list.filter(p => DA_GESTIRE.includes(p.stato)).length,
+    nuova_risposta: list.filter(p => p.stato === 'Nuova Risposta').length,
     in_lavorazione: list.filter(p => p.stato === 'In lavorazione').length,
     attesa: list.filter(p => p.stato === 'Attesa Bonifico').length,
     confermate: list.filter(p => p.stato === 'Confermata').length,
@@ -133,6 +135,7 @@ const filtered = computed(() => {
 
   // Filter
   if (activeFilter.value === 'da_gestire') items = items.filter(p => DA_GESTIRE.includes(p.stato))
+  else if (activeFilter.value === 'nuova_risposta') items = items.filter(p => p.stato === 'Nuova Risposta')
   else if (activeFilter.value === 'in_lavorazione') items = items.filter(p => p.stato === 'In lavorazione')
   else if (activeFilter.value === 'attesa') items = items.filter(p => p.stato === 'Attesa Bonifico')
   else if (activeFilter.value === 'confermate') items = items.filter(p => p.stato === 'Confermata')
@@ -247,6 +250,8 @@ function fmtDate(d) {
   const months = ['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic']
   return `${dt.getDate()} ${months[dt.getMonth()]}`
 }
+
+function printPage() { window.print() }
 
 function exportCSV() {
   const headers = ['Nome','Cognome','Email','Telefono','Stato','Tipo','Arrivo','Partenza','Adulti','Bambini','Posto','Costo','Data']

@@ -135,7 +135,24 @@
 
     <!-- Modelli email -->
     <div class="bg-surface rounded-xl shadow-sm border border-border p-5">
-      <h2 class="text-sm font-bold text-primary-dark mb-4 pb-2 border-b border-border">Modelli Email</h2>
+      <h2 class="text-sm font-bold text-primary-dark mb-3 pb-2 border-b border-border">Modelli Email</h2>
+      <div class="mb-4 p-3 bg-blue-50 rounded-lg text-xs text-blue-800 leading-relaxed">
+        <strong>Guida variabili:</strong> Usa queste parole tra parentesi graffe nel testo, verranno sostituite automaticamente con i dati del cliente.<br>
+        <div class="mt-2 grid grid-cols-2 gap-x-4 gap-y-1">
+          <span><code class="bg-blue-100 px-1 rounded">{nome}</code> — Nome del cliente</span>
+          <span><code class="bg-blue-100 px-1 rounded">{cognome}</code> — Cognome</span>
+          <span><code class="bg-blue-100 px-1 rounded">{data_arrivo}</code> — Data arrivo</span>
+          <span><code class="bg-blue-100 px-1 rounded">{data_partenza}</code> — Data partenza</span>
+          <span><code class="bg-blue-100 px-1 rounded">{adulti}</code> — Numero adulti</span>
+          <span><code class="bg-blue-100 px-1 rounded">{bambini}</code> — Numero bambini</span>
+          <span><code class="bg-blue-100 px-1 rounded">{posto_per}</code> — Tipo alloggio</span>
+          <span><code class="bg-blue-100 px-1 rounded">{costo_totale}</code> — Costo totale</span>
+          <span><code class="bg-blue-100 px-1 rounded">{caparra}</code> — Importo caparra</span>
+          <span><code class="bg-blue-100 px-1 rounded">{saldo}</code> — Saldo rimanente</span>
+          <span><code class="bg-blue-100 px-1 rounded">{caparra_percentuale}</code> — Percentuale</span>
+          <span><code class="bg-blue-100 px-1 rounded">{disponibile_da}</code> — Prossima data libera</span>
+        </div>
+      </div>
       <div class="flex gap-2 mb-4 flex-wrap">
         <button v-for="l in LINGUE" :key="l" @click="filterLingua = l"
           class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"

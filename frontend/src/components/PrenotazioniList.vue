@@ -110,6 +110,7 @@ const DA_GESTIRE = ['Nuova', 'Nuova Risposta', 'In lavorazione', 'Attesa Bonific
 const filterOptions = [
   { key: 'tutti', label: 'Tutti' },
   { key: 'da_gestire', label: 'Da gestire' },
+  { key: 'nuove', label: 'Nuove richieste' },
   { key: 'nuova_risposta', label: 'Nuove risposte' },
   { key: 'in_lavorazione', label: 'In lavorazione' },
   { key: 'attesa', label: 'Attesa bonifico' },
@@ -122,6 +123,7 @@ const filterCounts = computed(() => {
   return {
     tutti: list.length,
     da_gestire: list.filter(p => DA_GESTIRE.includes(p.stato)).length,
+    nuove: list.filter(p => p.stato === 'Nuova').length,
     nuova_risposta: list.filter(p => p.stato === 'Nuova Risposta').length,
     in_lavorazione: list.filter(p => p.stato === 'In lavorazione').length,
     attesa: list.filter(p => p.stato === 'Attesa Bonifico').length,
@@ -135,6 +137,7 @@ const filtered = computed(() => {
 
   // Filter
   if (activeFilter.value === 'da_gestire') items = items.filter(p => DA_GESTIRE.includes(p.stato))
+  else if (activeFilter.value === 'nuove') items = items.filter(p => p.stato === 'Nuova')
   else if (activeFilter.value === 'nuova_risposta') items = items.filter(p => p.stato === 'Nuova Risposta')
   else if (activeFilter.value === 'in_lavorazione') items = items.filter(p => p.stato === 'In lavorazione')
   else if (activeFilter.value === 'attesa') items = items.filter(p => p.stato === 'Attesa Bonifico')

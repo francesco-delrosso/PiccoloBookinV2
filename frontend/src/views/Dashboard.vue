@@ -1,13 +1,13 @@
 <template>
   <div class="flex flex-col md:flex-row h-screen">
     <!-- Icon sidebar -->
-    <div class="order-last md:order-first w-full md:w-[52px] shrink-0 bg-primary-dark flex md:flex-col items-center justify-around md:justify-start md:py-4 md:gap-1 py-1">
-      <div class="hidden md:flex w-8 h-8 rounded-lg bg-white/20 items-center justify-center text-white font-bold text-xs md:mb-4">PC</div>
+    <div class="order-last md:order-first w-full md:w-[68px] shrink-0 bg-primary-dark flex md:flex-col items-center justify-around md:justify-start md:py-5 md:gap-2 py-1">
+      <div class="hidden md:flex w-10 h-10 rounded-xl bg-white/20 items-center justify-center text-white font-bold text-sm md:mb-5">PC</div>
       <button v-for="nav in navItems" :key="nav.id"
         @click="activePanel = nav.id; store.selected = null"
         class="nav-icon" :class="activePanel === nav.id ? 'bg-white/20 text-white' : 'text-white/50 hover:text-white hover:bg-white/10'"
         :title="nav.label">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" :d="nav.icon" />
         </svg>
       </button>
@@ -267,9 +267,9 @@ onUnmounted(() => {
 
 <style scoped>
 .nav-icon {
-  width: 36px; height: 36px;
+  width: 44px; height: 44px;
   display: flex; align-items: center; justify-content: center;
-  border-radius: 0.5rem; transition: all 0.15s;
+  border-radius: 0.6rem; transition: all 0.15s;
 }
 .tb-btn {
   padding: 0.35rem 0.75rem; font-size: 0.75rem; font-weight: 600;

@@ -81,7 +81,7 @@
         <button @click="page > 1 && page--" :disabled="page <= 1" class="pg-btn">&lsaquo;</button>
         <template v-for="n in visiblePages" :key="n">
           <span v-if="n === '...'" class="px-1.5 text-gray-400 text-sm">...</span>
-          <button v-else @click="page = n" class="pg-btn" :class="page === n ? 'bg-primary text-white border-primary font-bold shadow-md' : 'hover:bg-gray-100'">{{ n }}</button>
+          <button v-else @click="page = n" class="pg-btn" :style="page === n ? 'background:#2B6B4F;color:white;border-color:#2B6B4F;font-weight:700' : ''">{{ n }}</button>
         </template>
         <button @click="page < totalPages && page++" :disabled="page >= totalPages" class="pg-btn">&rsaquo;</button>
         <button @click="page = totalPages" :disabled="page >= totalPages" class="pg-btn">&raquo;</button>

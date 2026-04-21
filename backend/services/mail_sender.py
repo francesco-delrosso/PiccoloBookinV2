@@ -65,6 +65,7 @@ def send_email(
     body: str,
     settings: dict,
     reply_to_message_id: str | None = None,
+    references: str | None = None,
 ) -> str:
     """Send an email via SMTP with TLS.
 
@@ -90,8 +91,9 @@ def send_email(
 
     # Threading headers
     if reply_to_message_id:
-        msg["In-Reply-To"] = reply_to_message_id
-        msg["References"] = reply_to_message_id
+        rid = reply_to_message_id if reply_to_message_id.startswith("<") else f"<{reply_to_message_id}>"
+        msg["In-Reply-To"] = rid
+        msg["References"] = references or rid
 
     msg.attach(MIMEText(body, "plain", "utf-8"))
 

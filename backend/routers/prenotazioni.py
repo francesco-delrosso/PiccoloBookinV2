@@ -123,16 +123,28 @@ def invia_messaggio(
 
     settings = _load_settings(db)
 
-    subject = data.soggetto or f"Re: Piccolo Camping"
-
-    # Find last client message for In-Reply-To
+    # Build subject: if user provided one use it, otherwise Re: last subject
+    # Find the last message in thread (any sender) for In-Reply-To
     last_msg = (
         db.query(StoricoMessaggio)
-        .filter_by(id_prenotazione=pren_id, mittente="Cliente")
+        .filter_by(id_prenotazione=pren_id)
+        .filter(StoricoMessaggio.message_id.isnot(None))
         .order_by(StoricoMessaggio.data_ora.desc())
         .first()
     )
     reply_to = last_msg.message_id if last_msg else None
+
+    # Build References chain (all message_ids in thread)
+    all_msgs = (
+        db.query(StoricoMessaggio.message_id)
+        .filter_by(id_prenotazione=pren_id)
+        .filter(StoricoMessaggio.message_id.isnot(None))
+        .order_by(StoricoMessaggio.data_ora)
+        .all()
+    )
+    references = " ".join(f"<{m.message_id}>" for m in all_msgs if m.message_id)
+
+    subject = data.soggetto or f"Re: Piccolo Camping"
 
     try:
         new_mid = send_email(
@@ -141,6 +153,7 @@ def invia_messaggio(
             body=data.testo,
             settings=settings,
             reply_to_message_id=reply_to,
+            references=references or None,
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Errore invio: {e}")
